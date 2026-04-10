@@ -1,20 +1,16 @@
 {
-  "short_name": "Meal Planner",
-  "name": "Meal Planner App",
+  "name": "Meal Planner",
+  "short_name": "Meals",
+  "description": "Plan meals and shop on Woolworths",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#faf8f4",
+  "theme_color": "#c45d3e",
   "icons": [
     {
-      "src": "images/icons/icon-192x192.png",
-      "type": "image/png",
-      "sizes": "192x192"
-    },
-    {
-      "src": "images/icons/icon-512x512.png",
-      "type": "image/png",
-      "sizes": "512x512"
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍽</text></svg>",
+      "sizes": "any",
+      "type": "image/svg+xml"
     }
-  ],
-  "start_url": "/index.html",
-  "display": "standalone",
-  "theme_color": "#ffffff",
-  "background_color": "#ffffff"
+  ]
 }

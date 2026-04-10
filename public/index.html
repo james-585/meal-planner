@@ -1,102 +1,766 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meal Planner Application</title>
-    <link rel="stylesheet" href="styles.css">
-    <script src="script.js" defer></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#faf8f4">
+<title>Meal Planner</title>
+<link rel="manifest" href="/manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Fraunces:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#faf8f4;--fg:#1a1714;--card:#fff;--accent:#c45d3e;--accent-light:#f4e8e3;--accent-dark:#9e3e24;--border:#e8e4de;--muted:#8a8279;--green:#4a7c59;--tag-bg:#f0ece6;--radius:12px;--font:'DM Sans',system-ui,sans-serif;--font-display:'Fraunces',Georgia,serif;--ww-green:#125a2d}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);-webkit-font-smoothing:antialiased}
+.app{max-width:540px;margin:0 auto;min-height:100vh;padding-bottom:80px}
+.header{padding:20px 20px 12px;display:flex;align-items:center;justify-content:space-between}
+.header h1{font-family:var(--font-display);font-size:26px;font-weight:600}
+.header-actions{display:flex;gap:8px}
+.icon-btn{width:38px;height:38px;border-radius:50%;border:1px solid var(--border);background:var(--card);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--fg);font-size:18px}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border-radius:8px;border:none;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-secondary{background:var(--tag-bg);color:var(--fg)}
+.btn-outline{background:none;border:1px solid var(--border);color:var(--fg)}
+.btn-green{background:var(--green);color:#fff}
+.btn-ww{background:var(--ww-green);color:#fff;font-size:16px;font-weight:600;padding:16px;border-radius:var(--radius);width:100%;box-shadow:0 2px 8px rgba(18,90,45,.3)}
+.btn-ww:disabled{opacity:.6;cursor:wait}
+.btn-danger{background:#fde8e8;color:#c53030}
+
+/* Tab bar */
+.tab-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:540px;display:flex;background:var(--card);border-top:1px solid var(--border);z-index:100;padding:6px 0 env(safe-area-inset-bottom,8px)}
+.tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border:none;background:none;cursor:pointer;color:var(--muted);font-size:11px;font-weight:500;position:relative;font-family:inherit}
+.tab-btn.active{color:var(--accent)}
+.tab-btn svg{width:22px;height:22px}
+
+/* Cards */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin:0 16px 12px}
+.card-title{font-family:var(--font-display);font-size:18px;font-weight:600;margin-bottom:4px;cursor:pointer}
+.card-meta{font-size:13px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
+
+.chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;background:var(--tag-bg);color:var(--fg);border:none;cursor:pointer;font-family:inherit}
+.chip:hover{background:var(--accent-light);color:var(--accent)}
+.chip-accent{background:var(--accent);color:#fff}
+
+/* Forms */
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:13px;font-weight:500;margin-bottom:4px;color:var(--muted)}
+.form-input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--fg);font-family:inherit}
+.form-input:focus{outline:none;border-color:var(--accent)}
+.form-row{display:flex;gap:10px}
+.form-row>*{flex:1}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:flex;align-items:flex-end;justify-content:center}
+.modal-body{background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:540px;max-height:92vh;overflow-y:auto;padding:24px 20px 32px}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.modal-header h2{font-family:var(--font-display);font-size:22px;font-weight:600}
+.close-btn{width:32px;height:32px;border-radius:50%;border:none;background:var(--tag-bg);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:var(--muted)}
+
+/* Shopping */
+.shop-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.shop-check{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.shop-check.checked{background:var(--green);border-color:var(--green)}
+.cat-header{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);padding:16px 0 6px;display:flex;align-items:center;gap:8px}
+.cat-header::after{content:"";flex:1;height:1px;background:var(--border)}
+
+/* Woolworths product matching */
+.ww-overlay{position:fixed;inset:0;background:var(--bg);z-index:250;overflow-y:auto}
+.ww-flow{max-width:540px;margin:0 auto;padding:24px 20px 40px}
+.ww-progress{height:4px;background:var(--border);border-radius:2px;margin-bottom:24px;overflow:hidden}
+.ww-progress-bar{height:100%;background:var(--ww-green);border-radius:2px;transition:width .3s}
+
+.product-card{background:var(--card);border:2px solid var(--border);border-radius:var(--radius);padding:12px;display:flex;gap:12px;cursor:pointer;transition:border-color .15s;margin-bottom:8px}
+.product-card:hover,.product-card.selected{border-color:var(--ww-green)}
+.product-card.selected{background:#f0faf3}
+.product-img{width:64px;height:64px;border-radius:8px;object-fit:contain;background:#f5f5f5;flex-shrink:0}
+.product-info{flex:1;min-width:0}
+.product-name{font-size:13px;font-weight:500;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.product-meta{font-size:12px;color:var(--muted)}
+.product-price{font-size:16px;font-weight:700;color:var(--ww-green)}
+.product-special{font-size:11px;color:var(--accent);font-weight:600}
+
+/* Day cards */
+.day-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin:0 16px 10px}
+.day-label{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:8px}
+.day-recipe{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg);border-radius:8px;font-size:14px;margin-bottom:4px}
+.day-recipe button{border:none;background:none;cursor:pointer;color:var(--muted);font-size:16px}
+
+.empty{text-align:center;padding:48px 24px;color:var(--muted)}
+.empty p{font-size:15px;margin-bottom:16px}
+
+.spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+.spinner-dark{border-color:rgba(0,0,0,.1);border-top-color:var(--ww-green)}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 20px;border-radius:24px;font-size:14px;font-weight:500;z-index:300;box-shadow:0 4px 16px rgba(0,0,0,.2);white-space:nowrap}
+
+.ing-row{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+.ing-row input{font-size:13px;padding:8px}
+.ing-amt{width:60px;flex-shrink:0}.ing-unit{width:70px;flex-shrink:0}.ing-name{flex:1}
+.ing-remove{width:28px;height:28px;border-radius:50%;border:none;background:#fde8e8;color:#c53030;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+.step-row{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px}
+.step-num{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:8px}
+.step-row textarea{flex:1;min-height:60px;resize:vertical}
+
+.detail-ing{padding:6px 0;font-size:14px;display:flex;gap:6px}
+.detail-ing b{color:var(--accent);font-weight:600}
+
+.ww-summary{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px}
+.ww-summary-row{display:flex;justify-content:space-between;padding:4px 0;font-size:14px}
+.ww-summary-total{font-weight:700;font-size:16px;border-top:2px solid var(--border);padding-top:8px;margin-top:8px}
+
+.hidden{display:none}
+</style>
 </head>
 <body>
-    <header>
-        <h1>Meal Planner</h1>
-        <nav>
-            <ul>
-                <li><a href="#recipes">Recipes</a></li>
-                <li><a href="#planner">Planner</a></li>
-                <li><a href="#shopping">Shopping List</a></li>
-            </ul>
-        </nav>
-    </header>
+<div class="app" id="app"></div>
 
-    <main>
-        <section id="recipes">
-            <h2>Recipes</h2>
-            <div id="recipe-list">
-                <!-- Recipe items will be displayed here -->
+<script>
+// ─── App State ────────────────────────────────────────────────
+const state = {
+  recipes: JSON.parse(localStorage.getItem('mp_recipes') || '[]'),
+  weekPlan: JSON.parse(localStorage.getItem('mp_weekplan') || '{}'),
+  shoppingList: JSON.parse(localStorage.getItem('mp_shopping') || '[]'),
+  tab: 'recipes',
+  toast: '',
+};
+
+const CATEGORIES = {
+  "Fruit & Veg": ["onion","garlic","tomato","potato","carrot","lettuce","spinach","broccoli","capsicum","zucchini","mushroom","avocado","lemon","lime","ginger","chilli","coriander","parsley","basil","mint","thyme","rosemary","banana","apple","orange","berries","cucumber","celery","sweet potato","corn","peas","beans","kale","rocket","spring onion","shallot","leek","beetroot","pumpkin","eggplant","cabbage","cauliflower","asparagus"],
+  "Meat & Seafood": ["chicken","beef","pork","lamb","mince","sausage","bacon","ham","steak","salmon","prawns","fish","tuna","turkey","chorizo","prosciutto","pancetta"],
+  "Dairy & Eggs": ["milk","cheese","butter","cream","yoghurt","egg","parmesan","mozzarella","cheddar","feta","ricotta","sour cream","cream cheese"],
+  "Bakery": ["bread","rolls","tortilla","pita","naan","wraps","pastry","puff pastry","sourdough"],
+  "Pantry": ["flour","sugar","salt","pepper","oil","olive oil","vinegar","soy sauce","fish sauce","oyster sauce","tomato paste","coconut milk","stock","rice","pasta","noodles","lentils","chickpeas","canned tomatoes","honey","maple syrup","mustard","ketchup","mayonnaise","cumin","paprika","turmeric","cinnamon","oregano","curry powder","curry paste","chilli flakes","baking powder","vanilla","cocoa","cornflour","breadcrumbs","panko","sesame oil","tahini","peanut butter"],
+  "Frozen": ["frozen peas","frozen berries","frozen spinach","ice cream","frozen chips"],
+  "Drinks": ["water","juice","coffee","tea","wine","beer","almond milk","oat milk","soy milk"],
+  "Other": []
+};
+
+const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+
+function categorise(name) {
+  const l = name.toLowerCase();
+  for (const [cat, kws] of Object.entries(CATEGORIES)) {
+    if (cat === "Other") continue;
+    for (const kw of kws) if (l.includes(kw)) return cat;
+  }
+  return "Other";
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function persist() {
+  localStorage.setItem('mp_recipes', JSON.stringify(state.recipes));
+  localStorage.setItem('mp_weekplan', JSON.stringify(state.weekPlan));
+  localStorage.setItem('mp_shopping', JSON.stringify(state.shoppingList));
+}
+function toast(msg) { state.toast = msg; render(); setTimeout(() => { state.toast = ''; render(); }, 2400); }
+
+// ─── Woolworths Integration ──────────────────────────────────
+async function searchWoolworths(query) {
+  const resp = await fetch('/api/woolworths/search', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ query, pageSize: 3 })
+  });
+  return resp.json();
+}
+
+async function batchSearchWoolworths(ingredients) {
+  const resp = await fetch('/api/woolworths/batch-search', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ ingredients })
+  });
+  return resp.json();
+}
+
+async function getCartUrl(products) {
+  const resp = await fetch('/api/woolworths/cart-url', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ products })
+  });
+  return resp.json();
+}
+
+function toSearchTerm(name) {
+  let s = name.toLowerCase().trim();
+  s = s.replace(/\(.*?\)/g,'');
+  s = s.replace(/\b(finely|roughly|freshly|thinly|diced|chopped|sliced|minced|grated|crushed|ground|peeled|deseeded|trimmed|halved|quartered|torn|shredded|juiced|zested|melted|softened|to taste|optional|for serving|for garnish|extra|good quality|large|medium|small|baby)\b/gi,'');
+  return s.replace(/,/g,' ').replace(/\s+/g,' ').trim();
+}
+
+// ─── Render ──────────────────────────────────────────────────
+function render() {
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+
+  // Tab content
+  if (state.tab === 'recipes') renderRecipes(app);
+  else if (state.tab === 'planner') renderPlanner(app);
+  else if (state.tab === 'shopping') renderShopping(app);
+
+  // Tab bar
+  const tabBar = document.createElement('div');
+  tabBar.className = 'tab-bar';
+  ['recipes','planner','shopping'].forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn' + (state.tab === t ? ' active' : '');
+    const icons = {
+      recipes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+      planner: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+      shopping: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>',
+    };
+    btn.innerHTML = icons[t] + '<span>' + t.charAt(0).toUpperCase() + t.slice(1) + '</span>';
+    btn.onclick = () => { state.tab = t; render(); };
+    tabBar.appendChild(btn);
+  });
+  app.appendChild(tabBar);
+
+  // Toast
+  if (state.toast) {
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.textContent = state.toast;
+    app.appendChild(t);
+  }
+}
+
+// ─── Recipes Tab ─────────────────────────────────────────────
+function renderRecipes(app) {
+  const header = el('div','header',`<h1>Recipes</h1><div class="header-actions">
+    <button class="icon-btn" id="importBtn">🔗</button>
+    <button class="icon-btn" id="addBtn">+</button>
+  </div>`);
+  app.appendChild(header);
+  header.querySelector('#importBtn').onclick = () => showImportModal();
+  header.querySelector('#addBtn').onclick = () => showRecipeForm();
+
+  if (!state.recipes.length) {
+    app.appendChild(el('div','empty','<div style="font-size:48px;opacity:.3;margin-bottom:8px">📖</div><p>No recipes yet</p><div style="display:flex;gap:8px;justify-content:center"><button class="btn btn-primary" id="emptyAdd">Add Manually</button><button class="btn btn-outline" id="emptyImport">Import URL</button></div>'));
+    app.querySelector('#emptyAdd').onclick = () => showRecipeForm();
+    app.querySelector('#emptyImport').onclick = () => showImportModal();
+    return;
+  }
+
+  state.recipes.forEach(r => {
+    const card = el('div','card',`
+      <div class="card-title">${esc(r.name)}</div>
+      ${r.description ? `<p style="font-size:13px;color:var(--muted);margin-bottom:6px">${esc(r.description)}</p>` : ''}
+      <div class="card-meta">
+        ${r.servings ? `<span>🍽 ${esc(r.servings)} serves</span>` : ''}
+        ${r.prepTime ? `<span>⏱ ${esc(r.prepTime)}</span>` : ''}
+        ${r.cookTime ? `<span>🔥 ${esc(r.cookTime)}</span>` : ''}
+        <span>📝 ${r.ingredients.length} ingredients</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="chip viewBtn">View</button>
+        <button class="chip chip-accent planBtn">+ Add to Plan</button>
+      </div>
+    `);
+    card.querySelector('.card-title').onclick = () => showRecipeDetail(r);
+    card.querySelector('.viewBtn').onclick = () => showRecipeDetail(r);
+    card.querySelector('.planBtn').onclick = (e) => showDayPicker(e.target, r.id);
+    app.appendChild(card);
+  });
+}
+
+// ─── Planner Tab ─────────────────────────────────────────────
+function renderPlanner(app) {
+  const totalMeals = Object.values(state.weekPlan).flat().length;
+  app.appendChild(el('div','header',`<h1>Week Planner</h1>
+    <button class="btn btn-primary" id="genList" ${!totalMeals ? 'disabled' : ''}>Generate List</button>`));
+  app.querySelector('#genList').onclick = generateShoppingList;
+
+  DAYS.forEach(day => {
+    const recipes = (state.weekPlan[day]||[]).map(id => state.recipes.find(r=>r.id===id)).filter(Boolean);
+    const card = el('div','day-card',`
+      <div class="day-label">${day}</div>
+      ${recipes.map((r,i) => `<div class="day-recipe"><span>${esc(r.name)}</span><button data-day="${day}" data-idx="${i}">✕</button></div>`).join('')}
+      <button class="chip addMealBtn" data-day="${day}">+ Add meal</button>
+    `);
+    card.querySelectorAll('.day-recipe button').forEach(btn => {
+      btn.onclick = () => { state.weekPlan[btn.dataset.day].splice(parseInt(btn.dataset.idx),1); persist(); render(); };
+    });
+    card.querySelector('.addMealBtn').onclick = () => showRecipePicker(day);
+    app.appendChild(card);
+  });
+}
+
+// ─── Shopping Tab ────────────────────────────────────────────
+function renderShopping(app) {
+  const header = el('div','header',`<h1>Shopping</h1><div class="header-actions">
+    ${state.shoppingList.length ? '<button class="icon-btn" id="clearBtn">🗑</button>' : ''}
+  </div>`);
+  app.appendChild(header);
+  if (header.querySelector('#clearBtn')) {
+    header.querySelector('#clearBtn').onclick = () => {
+      state.shoppingList = state.shoppingList.filter(i=>!i.checked);
+      persist(); render(); toast('Cleared');
+    };
+  }
+
+  if (!state.shoppingList.length) {
+    app.appendChild(el('div','empty','<div style="font-size:48px;opacity:.3;margin-bottom:8px">🛒</div><p>No shopping list yet</p><button class="btn btn-primary" id="goPlanner">Go to Planner</button>'));
+    app.querySelector('#goPlanner').onclick = () => { state.tab='planner'; render(); };
+    return;
+  }
+
+  const wrap = el('div','','');
+  wrap.style.padding = '0 16px';
+
+  // Progress
+  const done = state.shoppingList.filter(i=>i.checked).length, total = state.shoppingList.length;
+  wrap.appendChild(el('div','',`
+    <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:6px"><span>${done} of ${total}</span><span>${Math.round(done/total*100)}%</span></div>
+    <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="height:100%;width:${done/total*100}%;background:var(--green);border-radius:3px;transition:width .3s"></div></div>
+  `));
+
+  // Woolworths CTA
+  const wwBtn = el('button','btn-ww','🛒 Send to Woolworths Cart');
+  wwBtn.style.margin = '16px 0 8px';
+  wwBtn.onclick = startWoolworthsMatching;
+  wrap.appendChild(wwBtn);
+  wrap.appendChild(el('p','','AI matches ingredients to Woolworths products, then adds them all to your cart in one click.'));
+  wrap.lastChild.style.cssText = 'font-size:12px;color:var(--muted);text-align:center;margin-bottom:16px;line-height:1.5';
+
+  // Items grouped
+  const grouped = {};
+  state.shoppingList.forEach((item,i) => {
+    if (!grouped[item.category]) grouped[item.category]=[];
+    grouped[item.category].push({...item, _i:i});
+  });
+
+  Object.keys(CATEGORIES).forEach(cat => {
+    if (!grouped[cat]?.length) return;
+    wrap.appendChild(el('div','cat-header',cat));
+    grouped[cat].forEach(item => {
+      const row = el('div','shop-item',`
+        <div class="shop-check ${item.checked?'checked':''}" data-i="${item._i}">${item.checked?'✓':''}</div>
+        <span style="flex:1;font-size:14px;${item.checked?'text-decoration:line-through;color:var(--muted)':''}">${esc(item.name)}</span>
+        ${item.amount ? `<span style="font-size:13px;color:var(--muted)">${esc(item.amount)}${item.unit?' '+esc(item.unit):''}</span>` : ''}
+      `);
+      row.querySelector('.shop-check').onclick = () => {
+        state.shoppingList[item._i].checked = !state.shoppingList[item._i].checked;
+        persist(); render();
+      };
+      wrap.appendChild(row);
+    });
+  });
+
+  app.appendChild(wrap);
+}
+
+// ─── Woolworths Matching Flow ────────────────────────────────
+async function startWoolworthsMatching() {
+  const unchecked = state.shoppingList.filter(i=>!i.checked);
+  if (!unchecked.length) return;
+
+  // Show loading overlay
+  const overlay = el('div','ww-overlay',`<div class="ww-flow">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div><div style="font-size:12px;font-weight:700;color:var(--ww-green);text-transform:uppercase;letter-spacing:.08em">Woolworths</div>
+      <div style="font-size:13px;color:var(--muted)">Finding products...</div></div>
+      <button class="close-btn" id="wwClose">✕</button>
+    </div>
+    <div style="text-align:center;padding:40px"><div class="spinner spinner-dark" style="width:32px;height:32px"></div>
+    <p style="margin-top:16px;color:var(--muted)">Searching Woolworths for ${unchecked.length} ingredients...</p></div>
+  </div>`);
+  document.body.appendChild(overlay);
+  overlay.querySelector('#wwClose').onclick = () => overlay.remove();
+
+  try {
+    // Build search terms
+    const ingredients = unchecked.map(i => ({
+      name: i.name,
+      searchTerm: toSearchTerm(i.name),
+      amount: i.amount,
+      unit: i.unit,
+    }));
+
+    const { results } = await batchSearchWoolworths(ingredients);
+
+    // Show product selection UI
+    showProductSelection(overlay, results, unchecked);
+  } catch (err) {
+    console.error(err);
+    overlay.querySelector('.ww-flow').innerHTML = `
+      <div style="text-align:center;padding:40px">
+        <p style="color:#c53030;margin-bottom:16px">Failed to search Woolworths. Please try again.</p>
+        <button class="btn btn-primary" id="retryBtn">Retry</button>
+        <button class="btn btn-secondary" id="closeBtn" style="margin-left:8px">Close</button>
+      </div>`;
+    overlay.querySelector('#retryBtn').onclick = () => { overlay.remove(); startWoolworthsMatching(); };
+    overlay.querySelector('#closeBtn').onclick = () => overlay.remove();
+  }
+}
+
+function showProductSelection(overlay, results, unchecked) {
+  const selectedProducts = results.map(r => r.matches.length > 0 ? { ...r.matches[0], quantity: 1 } : null);
+  let estimatedTotal = selectedProducts.reduce((sum, p) => sum + (p?.price || 0), 0);
+
+  function renderSelection() {
+    estimatedTotal = selectedProducts.reduce((sum, p) => sum + (p?.price || 0), 0);
+    const matched = selectedProducts.filter(Boolean).length;
+
+    overlay.querySelector('.ww-flow').innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div><div style="font-size:12px;font-weight:700;color:var(--ww-green);text-transform:uppercase;letter-spacing:.08em">Review Products</div>
+        <div style="font-size:13px;color:var(--muted)">${matched} of ${results.length} matched</div></div>
+        <button class="close-btn" id="wwClose2">✕</button>
+      </div>
+
+      <div class="ww-summary">
+        <div class="ww-summary-row"><span>Items matched</span><span>${matched} / ${results.length}</span></div>
+        <div class="ww-summary-row ww-summary-total"><span>Estimated total</span><span>$${estimatedTotal.toFixed(2)}</span></div>
+      </div>
+
+      <div id="productList"></div>
+
+      <button class="btn-ww" id="addAllBtn" ${!matched ? 'disabled' : ''} style="margin-top:16px">
+        🛒 Add ${matched} items to Woolworths Cart
+      </button>
+      <p style="font-size:12px;color:var(--muted);text-align:center;margin-top:8px">
+        Opens woolworths.com.au with all items added to your cart. You'll need to be logged in.
+      </p>
+    `;
+
+    overlay.querySelector('#wwClose2').onclick = () => overlay.remove();
+
+    const list = overlay.querySelector('#productList');
+    results.forEach((result, idx) => {
+      const section = el('div','',`
+        <div style="font-size:13px;font-weight:600;margin:16px 0 8px;display:flex;justify-content:space-between">
+          <span>${esc(unchecked[idx]?.name || result.ingredient)}</span>
+          <span style="font-size:12px;color:var(--muted)">${unchecked[idx]?.amount || ''}${unchecked[idx]?.unit ? ' ' + unchecked[idx].unit : ''}</span>
+        </div>
+      `);
+
+      if (!result.matches.length) {
+        section.appendChild(el('div','','<p style="font-size:13px;color:var(--muted);padding:8px;background:var(--tag-bg);border-radius:8px">No products found — search: "' + esc(result.searchTerm) + '"</p>'));
+      } else {
+        result.matches.forEach((product, pIdx) => {
+          const isSelected = selectedProducts[idx]?.stockcode === product.stockcode;
+          const card = el('div', `product-card ${isSelected ? 'selected' : ''}`, `
+            <img class="product-img" src="${product.image || ''}" alt="" onerror="this.style.display='none'">
+            <div class="product-info">
+              <div class="product-name">${esc(product.name)}</div>
+              <div class="product-meta">${esc(product.packageSize)} ${product.cupString ? '· ' + esc(product.cupString) : ''}</div>
+              ${product.isOnSpecial ? '<div class="product-special">ON SPECIAL</div>' : ''}
             </div>
-        </section>
-
-        <section id="planner">
-            <h2>Weekly Meal Planner</h2>
-            <div id="meal-planner">
-                <!-- Planner UI will be here -->
+            <div style="text-align:right;flex-shrink:0">
+              <div class="product-price">$${product.price?.toFixed(2) || '?'}</div>
+              ${product.wasPrice && product.wasPrice > product.price ? `<div style="font-size:11px;color:var(--muted);text-decoration:line-through">$${product.wasPrice.toFixed(2)}</div>` : ''}
             </div>
-        </section>
+          `);
+          card.onclick = () => {
+            selectedProducts[idx] = { ...product, quantity: 1 };
+            renderSelection();
+          };
+          section.appendChild(card);
+        });
+      }
+      list.appendChild(section);
+    });
 
-        <section id="shopping">
-            <h2>Shopping List</h2>
-            <div id="shopping-list">
-                <!-- Shopping list items will be displayed here -->
-            </div>
-        </section>
-    </main>
+    overlay.querySelector('#addAllBtn').onclick = async () => {
+      const items = selectedProducts.filter(Boolean);
+      if (!items.length) return;
 
-    <footer>
-        <p>&copy; 2026 Meal Planner App</p>
-    </footer>
+      const btn = overlay.querySelector('#addAllBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Adding to cart...';
+
+      try {
+        const { cartUrl } = await getCartUrl(items.map(p => ({
+          stockcode: p.stockcode,
+          quantity: p.quantity || 1,
+        })));
+
+        // Open Woolworths with items in cart
+        window.open(cartUrl, '_blank');
+
+        // Mark items as checked
+        unchecked.forEach(item => {
+          const idx = state.shoppingList.findIndex(i => i.name === item.name && !i.checked);
+          if (idx !== -1) state.shoppingList[idx].checked = true;
+        });
+        persist();
+
+        overlay.remove();
+        toast(`${items.length} items sent to Woolworths!`);
+        render();
+      } catch (err) {
+        console.error(err);
+        btn.disabled = false;
+        btn.textContent = '🛒 Retry';
+      }
+    };
+  }
+
+  renderSelection();
+}
+
+// ─── Generate Shopping List ──────────────────────────────────
+function generateShoppingList() {
+  const allIngs = {};
+  const ids = new Set();
+  Object.values(state.weekPlan).flat().forEach(id => ids.add(id));
+  for (const rid of ids) {
+    const r = state.recipes.find(x=>x.id===rid);
+    if (!r) continue;
+    let count = 0;
+    Object.values(state.weekPlan).flat().forEach(id => { if(id===rid) count++; });
+    for (const ing of r.ingredients) {
+      const key = ing.name.toLowerCase().trim();
+      if (!allIngs[key]) allIngs[key] = {name:ing.name,amount:ing.amount||'',unit:ing.unit||'',category:categorise(ing.name),checked:false};
+      else {
+        const ex = allIngs[key];
+        if (ex.unit===ing.unit && !isNaN(parseFloat(ex.amount)) && !isNaN(parseFloat(ing.amount)))
+          ex.amount = String(parseFloat(ex.amount)+parseFloat(ing.amount)*count);
+        else if (ing.amount)
+          ex.amount = ex.amount ? `${ex.amount} + ${ing.amount}${ing.unit?' '+ing.unit:''}` : ing.amount;
+      }
+    }
+  }
+  state.shoppingList = Object.values(allIngs).sort((a,b)=>a.category.localeCompare(b.category));
+  persist(); state.tab='shopping'; render();
+  toast(`${state.shoppingList.length} items`);
+}
+
+// ─── Modal Helpers ───────────────────────────────────────────
+function showModal(title, contentFn) {
+  const overlay = el('div','modal-overlay','');
+  const body = el('div','modal-body','');
+  const header = el('div','modal-header',`<h2>${title}</h2>`);
+  const closeBtn = el('button','close-btn','✕');
+  closeBtn.onclick = () => overlay.remove();
+  header.appendChild(closeBtn);
+  body.appendChild(header);
+  contentFn(body, () => overlay.remove());
+  overlay.appendChild(body);
+  overlay.onclick = e => { if(e.target===overlay) overlay.remove(); };
+  document.body.appendChild(overlay);
+  return overlay;
+}
+
+function showImportModal() {
+  showModal('Import Recipe', (body, close) => {
+    body.innerHTML += `
+      <div class="form-group"><label class="form-label">Recipe URL</label>
+        <input class="form-input" id="importUrl" placeholder="https://www.taste.com.au/recipes/...">
+      </div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Works with most recipe websites.</p>
+      <div id="importError" style="font-size:13px;color:#c53030;margin-bottom:12px;display:none"></div>
+      <button class="btn btn-primary" style="width:100%" id="importGo">Import Recipe</button>
+    `;
+    const closeBtn = body.querySelector('.close-btn');
+    closeBtn.onclick = close;
+    body.querySelector('#importGo').onclick = async () => {
+      const url = body.querySelector('#importUrl').value.trim();
+      if (!url) return;
+      const btn = body.querySelector('#importGo');
+      btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Importing...';
+      try {
+        // We'll use a simple fetch-and-parse approach via the server
+        // For now, add a placeholder - in production you'd call Claude API or a recipe parser
+        const resp = await fetch('/api/woolworths/search', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({query:'test',pageSize:1})
+        });
+        // Placeholder: show manual entry for now
+        close();
+        toast('For URL import, use the Claude-powered artifact version. Adding manually...');
+        showRecipeForm();
+      } catch(e) {
+        body.querySelector('#importError').style.display='block';
+        body.querySelector('#importError').textContent='Failed to import. Try adding manually.';
+        btn.disabled=false; btn.textContent='Import Recipe';
+      }
+    };
+  });
+}
+
+function showRecipeForm(existing) {
+  showModal(existing ? 'Edit Recipe' : 'Add Recipe', (body, close) => {
+    const r = existing || {name:'',description:'',servings:'4',prepTime:'',cookTime:'',ingredients:[{id:uid(),amount:'',unit:'',name:''}],steps:['']};
+    body.querySelector('.close-btn').onclick = close;
+    const form = el('div','','');
+    form.innerHTML = `
+      <div class="form-group"><label class="form-label">Recipe Name *</label><input class="form-input" id="fname" value="${esc(r.name)}" placeholder="e.g. Spaghetti Bolognese"></div>
+      <div class="form-group"><label class="form-label">Description</label><input class="form-input" id="fdesc" value="${esc(r.description)}" placeholder="Optional"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Servings</label><input class="form-input" id="fserv" value="${esc(r.servings)}"></div>
+        <div class="form-group"><label class="form-label">Prep</label><input class="form-input" id="fprep" value="${esc(r.prepTime)}" placeholder="15 min"></div>
+        <div class="form-group"><label class="form-label">Cook</label><input class="form-input" id="fcook" value="${esc(r.cookTime)}" placeholder="30 min"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin:16px 0 10px"><label class="form-label" style="margin:0">Ingredients</label><button class="chip" id="addIng">+ Add</button></div>
+      <div id="ingList"></div>
+      <div style="display:flex;justify-content:space-between;margin:16px 0 10px"><label class="form-label" style="margin:0">Method</label><button class="chip" id="addStep">+ Add Step</button></div>
+      <div id="stepList"></div>
+      <div style="display:flex;gap:10px;margin-top:20px">
+        <button class="btn btn-primary" style="flex:1" id="saveRecipe">${existing?'Save':'Add Recipe'}</button>
+        <button class="btn btn-secondary" id="cancelRecipe">Cancel</button>
+      </div>
+    `;
+    body.appendChild(form);
+
+    let ings = [...r.ingredients];
+    let steps = [...r.steps];
+
+    function renderIngs() {
+      const list = form.querySelector('#ingList');
+      list.innerHTML = '';
+      ings.forEach((ing,i) => {
+        const row = el('div','ing-row',`
+          <input class="form-input ing-amt" placeholder="Qty" value="${esc(ing.amount)}" data-i="${i}" data-f="amount">
+          <input class="form-input ing-unit" placeholder="Unit" value="${esc(ing.unit)}" data-i="${i}" data-f="unit">
+          <input class="form-input ing-name" placeholder="Ingredient" value="${esc(ing.name)}" data-i="${i}" data-f="name">
+          ${ings.length>1?`<button class="ing-remove" data-i="${i}">✕</button>`:''}
+        `);
+        row.querySelectorAll('input').forEach(inp => {
+          inp.oninput = () => { ings[inp.dataset.i][inp.dataset.f] = inp.value; };
+        });
+        const rm = row.querySelector('.ing-remove');
+        if(rm) rm.onclick = () => { ings.splice(i,1); renderIngs(); };
+        list.appendChild(row);
+      });
+    }
+
+    function renderSteps() {
+      const list = form.querySelector('#stepList');
+      list.innerHTML = '';
+      steps.forEach((s,i) => {
+        const row = el('div','step-row',`
+          <div class="step-num">${i+1}</div>
+          <textarea class="form-input" data-i="${i}" placeholder="Step ${i+1}...">${esc(s)}</textarea>
+          ${steps.length>1?`<button class="ing-remove" style="margin-top:8px" data-i="${i}">✕</button>`:''}
+        `);
+        row.querySelector('textarea').oninput = e => { steps[e.target.dataset.i] = e.target.value; };
+        const rm = row.querySelector('.ing-remove');
+        if(rm) rm.onclick = () => { steps.splice(i,1); renderSteps(); };
+        list.appendChild(row);
+      });
+    }
+
+    renderIngs(); renderSteps();
+    form.querySelector('#addIng').onclick = () => { ings.push({id:uid(),amount:'',unit:'',name:''}); renderIngs(); };
+    form.querySelector('#addStep').onclick = () => { steps.push(''); renderSteps(); };
+    form.querySelector('#cancelRecipe').onclick = close;
+    form.querySelector('#saveRecipe').onclick = () => {
+      const name = form.querySelector('#fname').value.trim();
+      if(!name) return;
+      const recipe = {
+        id: existing?.id || uid(),
+        name,
+        description: form.querySelector('#fdesc').value.trim(),
+        servings: form.querySelector('#fserv').value,
+        prepTime: form.querySelector('#fprep').value,
+        cookTime: form.querySelector('#fcook').value,
+        ingredients: ings.filter(i=>i.name.trim()),
+        steps: steps.filter(s=>s.trim()),
+        sourceUrl: existing?.sourceUrl || '',
+      };
+      if (existing) {
+        const idx = state.recipes.findIndex(r=>r.id===existing.id);
+        if(idx!==-1) state.recipes[idx] = recipe;
+      } else state.recipes.push(recipe);
+      persist(); close(); render(); toast(existing?'Updated!':'Added!');
+    };
+  });
+}
+
+function showRecipeDetail(recipe) {
+  showModal(recipe.name, (body, close) => {
+    body.querySelector('.close-btn').onclick = close;
+    body.querySelector('h2').textContent = recipe.name;
+    const content = el('div','','');
+    content.innerHTML = `
+      ${recipe.description ? `<p style="font-size:14px;color:var(--muted);margin-bottom:12px">${esc(recipe.description)}</p>` : ''}
+      <div class="card-meta" style="margin-bottom:16px">
+        ${recipe.servings?`<span>🍽 ${esc(recipe.servings)} serves</span>`:''}
+        ${recipe.prepTime?`<span>⏱ ${esc(recipe.prepTime)}</span>`:''}
+        ${recipe.cookTime?`<span>🔥 ${esc(recipe.cookTime)}</span>`:''}
+      </div>
+      <div class="cat-header">Ingredients</div>
+      ${recipe.ingredients.map(i=>`<div class="detail-ing">${(i.amount||i.unit)?`<b>${esc(i.amount)}${i.unit?' '+esc(i.unit):''}</b>`:''}<span>${esc(i.name)}</span></div>`).join('')}
+      ${recipe.steps?.length ? `<div class="cat-header" style="margin-top:8px">Method</div>${recipe.steps.map((s,i)=>`<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)"><div class="step-num">${i+1}</div><p style="font-size:14px;line-height:1.6">${esc(s)}</p></div>`).join('')}` : ''}
+      <div style="display:flex;gap:10px;margin-top:20px">
+        <button class="btn btn-outline" style="flex:1" id="editBtn">Edit</button>
+        <button class="btn btn-danger" id="delBtn">Delete</button>
+      </div>
+    `;
+    content.querySelector('#editBtn').onclick = () => { close(); showRecipeForm(recipe); };
+    content.querySelector('#delBtn').onclick = () => {
+      if(!confirm('Delete this recipe?')) return;
+      state.recipes = state.recipes.filter(r=>r.id!==recipe.id);
+      for(const d in state.weekPlan) state.weekPlan[d]=(state.weekPlan[d]||[]).filter(id=>id!==recipe.id);
+      persist(); close(); render(); toast('Deleted');
+    };
+    body.appendChild(content);
+  });
+}
+
+function showRecipePicker(day) {
+  showModal('Add to ' + day, (body, close) => {
+    body.querySelector('.close-btn').onclick = close;
+    if(!state.recipes.length) { body.appendChild(el('p','','No recipes yet.')); return; }
+    const list = el('div','','');
+    state.recipes.forEach(r => {
+      const item = el('div','','');
+      item.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg);border-radius:8px;cursor:pointer;margin-bottom:6px';
+      item.innerHTML = `<span style="font-size:14px;font-weight:500">${esc(r.name)}</span><span style="font-size:12px;color:var(--muted)">${r.ingredients.length} ing.</span>`;
+      item.onclick = () => {
+        if(!state.weekPlan[day]) state.weekPlan[day]=[];
+        state.weekPlan[day].push(r.id);
+        persist(); close(); render(); toast(`Added to ${day}`);
+      };
+      list.appendChild(item);
+    });
+    body.appendChild(list);
+  });
+}
+
+function showDayPicker(target, recipeId) {
+  // Simple dropdown
+  const existing = document.querySelector('.day-dropdown');
+  if(existing) existing.remove();
+  const dd = el('div','','');
+  dd.className = 'day-dropdown-popup';
+  dd.style.cssText = 'position:fixed;z-index:50;background:var(--card);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);min-width:150px;overflow:hidden';
+  const rect = target.getBoundingClientRect();
+  dd.style.top = (rect.bottom+4)+'px';
+  dd.style.left = Math.min(rect.left, window.innerWidth-160)+'px';
+  DAYS.forEach(d => {
+    const btn = el('button','',d);
+    btn.style.cssText = 'display:block;width:100%;text-align:left;padding:8px 14px;border:none;background:none;cursor:pointer;font-size:13px;font-family:inherit';
+    btn.onmouseover = () => btn.style.background='var(--accent-light)';
+    btn.onmouseout = () => btn.style.background='none';
+    btn.onclick = () => {
+      if(!state.weekPlan[d]) state.weekPlan[d]=[];
+      state.weekPlan[d].push(recipeId);
+      persist(); dd.remove(); render(); toast(`Added to ${d}`);
+    };
+    dd.appendChild(btn);
+  });
+  document.body.appendChild(dd);
+  setTimeout(() => {
+    const handler = (e) => { if(!dd.contains(e.target)) { dd.remove(); document.removeEventListener('click',handler); } };
+    document.addEventListener('click', handler);
+  }, 10);
+}
+
+// ─── Utilities ───────────────────────────────────────────────
+function el(tag, cls, html) {
+  const e = document.createElement(tag || 'div');
+  if(cls) e.className = cls;
+  if(html) e.innerHTML = html;
+  return e;
+}
+function esc(s) { if(!s) return ''; const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+// Boot
+render();
+</script>
 </body>
 </html>
-
-/* CSS Styles */
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-}
-
-header {
-    background: #4CAF50;
-    color: #ffffff;
-    padding: 1rem;
-    text-align: center;
-}
-
-nav ul {
-    list-style: none;
-    padding: 0;
-}
-
-nav ul li {
-    display: inline;
-    margin: 0 10px;
-}
-
-section {
-    padding: 20px;
-}
-
-/* JavaScript Code */
-document.addEventListener('DOMContentLoaded', () => {
-    // Functionality for loading recipes, managing planner and generating shopping list
-    loadRecipes();
-    setupPlanner();
-    generateShoppingList();
-});
-
-function loadRecipes() {
-    // Code to fetch and display recipes
-}
-
-function setupPlanner() {
-    // Code to set up meal planner functionality
-}
-
-function generateShoppingList() {
-    // Code to generate the shopping list
-}
-
-/* Woolworths product matching logic integration */
-function matchWoolworthsProducts() {
-    // Logic to match ingredients with Woolworths product API
-}
