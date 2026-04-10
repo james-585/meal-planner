@@ -1,1 +1,16 @@
-{"name":"meal-planner-woolworths","version":"1.0.0","description":"Meal planner with Woolworths cart integration","main":"server/index.js","type":"module","scripts":{"start":"node server/index.js","dev":"node --watch server/index.js"},"dependencies":{"express":"^4.18.2","node-fetch":"^3.3.2","cookie-parser":"^1.4.6"}}
+{
+  "name": "meal-planner-woolworths",
+  "version": "1.0.0",
+  "description": "Meal planner with Woolworths cart integration",
+  "main": "server/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-fetch": "^3.3.2",
+    "cookie-parser": "^1.4.6"
+  }
+}
