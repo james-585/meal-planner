@@ -4,735 +4,333 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#faf8f4">
 <title>Meal Planner</title>
 <link rel="manifest" href="/manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Fraunces:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#faf8f4;--fg:#1a1714;--card:#fff;--accent:#c45d3e;--accent-light:#f4e8e3;--accent-dark:#9e3e24;--border:#e8e4de;--muted:#8a8279;--green:#4a7c59;--tag-bg:#f0ece6;--radius:12px;--font:'DM Sans',system-ui,sans-serif;--font-display:'Fraunces',Georgia,serif;--ww:#125a2d}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--fg);font-family:var(--font);-webkit-font-smoothing:antialiased}
+:root{--bg:#faf8f4;--fg:#1a1714;--card:#fff;--accent:#c45d3e;--al:#f4e8e3;--ad:#9e3e24;--border:#e8e4de;--muted:#8a8279;--green:#4a7c59;--tag:#f0ece6;--r:12px;--f:'DM Sans',system-ui,sans-serif;--fd:'Fraunces',Georgia,serif;--ww:#125a2d}
+*{box-sizing:border-box;margin:0;padding:0}body{background:var(--bg);color:var(--fg);font-family:var(--f);-webkit-font-smoothing:antialiased}
 .app{max-width:540px;margin:0 auto;min-height:100vh;padding-bottom:80px}
-
-/* Header */
-.header{padding:20px 20px 12px;display:flex;align-items:center;justify-content:space-between}
-.header h1{font-family:var(--font-display);font-size:26px;font-weight:600}
-.hdr-btns{display:flex;gap:8px}
-.ibtn{width:38px;height:38px;border-radius:50%;border:1px solid var(--border);background:var(--card);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--fg);font-size:18px;font-family:inherit}
-.ibtn:hover{border-color:var(--accent);color:var(--accent)}
-
-/* Buttons */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border-radius:8px;border:none;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:opacity .15s}
-.btn:disabled{opacity:.5;cursor:not-allowed}
-.btn-p{background:var(--accent);color:#fff}
-.btn-s{background:var(--tag-bg);color:var(--fg)}
-.btn-o{background:none;border:1px solid var(--border);color:var(--fg)}
-.btn-g{background:var(--green);color:#fff}
-.btn-d{background:#fde8e8;color:#c53030}
-.btn-ww{background:var(--ww);color:#fff;font-size:16px;font-weight:600;padding:16px;border-radius:var(--radius);width:100%;box-shadow:0 2px 8px rgba(18,90,45,.25)}
-
-/* Tab bar */
+.hd{padding:20px 20px 12px;display:flex;align-items:center;justify-content:space-between}
+.hd h1{font-family:var(--fd);font-size:26px;font-weight:600}
+.hda{display:flex;gap:8px}
+.ib{width:38px;height:38px;border-radius:50%;border:1px solid var(--border);background:var(--card);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--fg);font-size:18px;font-family:inherit}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border-radius:8px;border:none;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit}.btn:disabled{opacity:.5;cursor:not-allowed}
+.bp{background:var(--accent);color:#fff}.bs{background:var(--tag);color:var(--fg)}.bo{background:none;border:1px solid var(--border);color:var(--fg)}.bg{background:var(--green);color:#fff}.bd{background:#fde8e8;color:#c53030}
+.bw{background:var(--ww);color:#fff;font-size:16px;font-weight:600;padding:16px;border-radius:var(--r);width:100%;box-shadow:0 2px 8px rgba(18,90,45,.25)}.bw:disabled{opacity:.6}
 .tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:540px;display:flex;background:var(--card);border-top:1px solid var(--border);z-index:100;padding:6px 0 env(safe-area-inset-bottom,8px)}
-.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border:none;background:none;cursor:pointer;color:var(--muted);font-size:11px;font-weight:500;position:relative;font-family:inherit}
-.tab.on{color:var(--accent)}
-.tab svg{width:22px;height:22px}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border:none;background:none;cursor:pointer;color:var(--muted);font-size:11px;font-weight:500;position:relative;font-family:inherit}.tab.on{color:var(--accent)}.tab svg{width:22px;height:22px}
 .badge{position:absolute;top:2px;right:calc(50% - 20px);min-width:18px;height:18px;border-radius:9px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px}
-
-/* Cards */
-.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin:0 16px 12px}
-.card-t{font-family:var(--font-display);font-size:18px;font-weight:600;margin-bottom:4px;cursor:pointer}
-.card-m{font-size:13px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
-.chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;background:var(--tag-bg);color:var(--fg);border:none;cursor:pointer;font-family:inherit}
-.chip:hover{background:var(--accent-light);color:var(--accent)}
-.chip-a{background:var(--accent);color:#fff}
-.chip-a:hover{background:var(--accent-dark)}
-
-/* Forms */
-.fg{margin-bottom:14px}
-.fl{display:block;font-size:13px;font-weight:500;margin-bottom:4px;color:var(--muted)}
-.fi{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--fg);font-family:inherit}
-.fi:focus{outline:none;border-color:var(--accent)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin:0 16px 12px}
+.ct{font-family:var(--fd);font-size:18px;font-weight:600;margin-bottom:4px;cursor:pointer}
+.cm{font-size:13px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;background:var(--tag);color:var(--fg);border:none;cursor:pointer;font-family:inherit}.chip:hover{background:var(--al);color:var(--accent)}
+.ca{background:var(--accent);color:#fff}.ca:hover{background:var(--ad)}
+.fg{margin-bottom:14px}.fl{display:block;font-size:13px;font-weight:500;margin-bottom:4px;color:var(--muted)}
+.fi{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--fg);font-family:inherit}.fi:focus{outline:none;border-color:var(--accent)}
 .fr{display:flex;gap:10px}.fr>*{flex:1}
-
-/* Modal */
 .mo{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:flex;align-items:flex-end;justify-content:center}
 .mb{background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:540px;max-height:92vh;overflow-y:auto;padding:24px 20px 32px}
-.mh{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.mh h2{font-family:var(--font-display);font-size:22px;font-weight:600}
-.xb{width:32px;height:32px;border-radius:50%;border:none;background:var(--tag-bg);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:var(--muted)}
-
-/* Shopping */
-.si{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
-.si:last-child{border-bottom:none}
-.sc{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:transparent}
-.sc.ck{background:var(--green);border-color:var(--green);color:#fff}
-.ch{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);padding:16px 0 6px;display:flex;align-items:center;gap:8px}
-.ch::after{content:"";flex:1;height:1px;background:var(--border)}
-
-/* Products */
-.pc{background:var(--card);border:2px solid var(--border);border-radius:var(--radius);padding:12px;display:flex;gap:12px;cursor:pointer;transition:border-color .15s;margin-bottom:8px}
-.pc:hover,.pc.sel{border-color:var(--ww)}.pc.sel{background:#f0faf3}
+.mh{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}.mh h2{font-family:var(--fd);font-size:22px;font-weight:600}
+.xb{width:32px;height:32px;border-radius:50%;border:none;background:var(--tag);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:var(--muted)}
+.si{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}.si:last-child{border-bottom:none}
+.sc{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:transparent;font-size:12px}.sc.ck{background:var(--green);border-color:var(--green);color:#fff}
+.ch{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);padding:16px 0 6px;display:flex;align-items:center;gap:8px}.ch::after{content:"";flex:1;height:1px;background:var(--border)}
+.pc{background:var(--card);border:2px solid var(--border);border-radius:var(--r);padding:12px;display:flex;gap:12px;cursor:pointer;margin-bottom:8px}.pc:hover,.pc.sel{border-color:var(--ww)}.pc.sel{background:#f0faf3}
 .pi{width:64px;height:64px;border-radius:8px;object-fit:contain;background:#f5f5f5;flex-shrink:0}
 .pn{font-size:13px;font-weight:500;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pp{font-size:16px;font-weight:700;color:var(--ww)}
-
-/* Day cards */
-.dc{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin:0 16px 10px}
+.dc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin:0 16px 10px}
 .dl{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:8px}
 .dr{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg);border-radius:8px;font-size:14px;margin-bottom:4px}
 .dr button{border:none;background:none;cursor:pointer;color:var(--muted);font-size:16px}
-
-/* Misc */
-.empty{text-align:center;padding:48px 24px;color:var(--muted)}
-.empty p{font-size:15px;margin-bottom:16px}
+.empty{text-align:center;padding:48px 24px;color:var(--muted)}.empty p{font-size:15px;margin-bottom:16px}
 .spin{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .6s linear infinite;display:inline-block}
-.spin-d{border-color:rgba(0,0,0,.1);border-top-color:var(--ww)}
+.spd{border-color:rgba(0,0,0,.1);border-top-color:var(--ww)}
 @keyframes sp{to{transform:rotate(360deg)}}
-.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 20px;border-radius:24px;font-size:14px;font-weight:500;z-index:300;box-shadow:0 4px 16px rgba(0,0,0,.2);white-space:nowrap;animation:fi .2s}
-@keyframes fi{from{opacity:0}to{opacity:1}}
-
-.ir{display:flex;gap:6px;align-items:center;margin-bottom:8px}
-.ir input{font-size:13px;padding:8px}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 20px;border-radius:24px;font-size:14px;font-weight:500;z-index:300;box-shadow:0 4px 16px rgba(0,0,0,.2);white-space:nowrap}
+.ir{display:flex;gap:6px;align-items:center;margin-bottom:8px}.ir input{font-size:13px;padding:8px}
 .ia{width:60px;flex-shrink:0}.iu{width:70px;flex-shrink:0}.in{flex:1}
 .ix{width:28px;height:28px;border-radius:50%;border:none;background:#fde8e8;color:#c53030;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-
-.sr{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px}
-.sn{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:8px}
-.sr textarea{flex:1;min-height:60px;resize:vertical}
-
-.ww-ov{position:fixed;inset:0;background:var(--bg);z-index:250;overflow-y:auto}
-.ww-fl{max-width:540px;margin:0 auto;padding:24px 20px 40px}
-.ww-sum{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px}
-
-/* Login form */
-.login-box{background:var(--card);border:2px solid var(--ww);border-radius:var(--radius);padding:20px;margin-bottom:16px}
-.login-box h3{font-family:var(--font-display);font-size:18px;font-weight:600;color:var(--ww);margin-bottom:12px}
-
-.link-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;text-decoration:none;color:var(--fg);font-size:13px;transition:border-color .15s}
-.link-item:hover{border-color:var(--ww)}
-.link-item span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.link-arrow{color:var(--muted);font-size:18px;flex-shrink:0}
-
-/* Dropdown fix — use absolute positioning within a relative parent */
-.dd-wrap{position:relative;display:inline-block}
-.dd-menu{position:absolute;bottom:calc(100% + 4px);left:0;background:var(--card);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);min-width:150px;overflow:hidden;z-index:50}
-.dd-menu button{display:block;width:100%;text-align:left;padding:8px 14px;border:none;background:none;cursor:pointer;font-size:13px;font-family:inherit}
-.dd-menu button:hover{background:var(--accent-light)}
+.srow{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px}
+.snum{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:8px}
+.srow textarea{flex:1;min-height:60px;resize:vertical}
+.wov{position:fixed;inset:0;background:var(--bg);z-index:250;overflow-y:auto}.wfl{max-width:540px;margin:0 auto;padding:24px 20px 40px}
+.wsu{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:16px}
+.lnk{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;text-decoration:none;color:var(--fg);font-size:13px}.lnk:hover{border-color:var(--ww)}
+.lnk span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ddw{position:relative;display:inline-block}
+.ddm{position:absolute;bottom:calc(100% + 4px);left:0;background:var(--card);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);min-width:150px;overflow:hidden;z-index:50}
+.ddm button{display:block;width:100%;text-align:left;padding:8px 14px;border:none;background:none;cursor:pointer;font-size:13px;font-family:inherit}.ddm button:hover{background:var(--al)}
+/* Review box */
+.rvw{background:#fffbe6;border:2px solid #f0c040;border-radius:var(--r);padding:16px;margin-bottom:16px}
+.rvw h3{font-size:15px;font-weight:600;margin-bottom:8px;color:#7a5a00}
+.warn{background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#7a5a00}
 </style>
 </head>
 <body>
-<div class="app" id="app">
-  <div style="display:flex;align-items:center;justify-content:center;height:100vh">
-    <div style="font-size:18px;opacity:.6">Loading...</div>
-  </div>
-</div>
-
+<div class="app" id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh"><div style="font-size:18px;opacity:.6">Loading...</div></div></div>
 <script>
-// ════════════════════════════════════════════════════════════
-//  STATE
-// ════════════════════════════════════════════════════════════
-const S = {
-  recipes: JSON.parse(localStorage.getItem('mp_r') || '[]'),
-  plan: JSON.parse(localStorage.getItem('mp_p') || '{}'),
-  list: JSON.parse(localStorage.getItem('mp_l') || '[]'),
-  tab: 'recipes',
-  toast: '',
-  wwAuth: null, // { loggedIn, email }
-};
+const S={recipes:JSON.parse(localStorage.getItem('mp_r')||'[]'),plan:JSON.parse(localStorage.getItem('mp_p')||'{}'),list:JSON.parse(localStorage.getItem('mp_l')||'[]'),tab:'recipes',toast:'',wwAuth:null};
+const CATS={"Fruit & Veg":["onion","garlic","tomato","potato","carrot","lettuce","spinach","broccoli","capsicum","zucchini","mushroom","avocado","lemon","lime","ginger","chilli","coriander","parsley","basil","mint","thyme","rosemary","banana","apple","orange","berries","cucumber","celery","sweet potato","corn","peas","beans","kale","rocket","spring onion","shallot","leek","beetroot","pumpkin","eggplant","cabbage","cauliflower","asparagus"],"Meat & Seafood":["chicken","beef","pork","lamb","mince","sausage","bacon","ham","steak","salmon","prawns","fish","tuna","turkey","chorizo"],"Dairy & Eggs":["milk","cheese","butter","cream","yoghurt","egg","parmesan","mozzarella","cheddar","feta","ricotta","sour cream","cream cheese"],"Bakery":["bread","rolls","tortilla","pita","naan","wraps","pastry","sourdough"],"Pantry":["flour","sugar","salt","pepper","oil","olive oil","vinegar","soy sauce","fish sauce","oyster sauce","tomato paste","coconut milk","stock","rice","pasta","noodles","lentils","chickpeas","canned tomatoes","honey","maple syrup","mustard","cumin","paprika","turmeric","cinnamon","oregano","curry powder","chilli flakes","baking powder","vanilla","cocoa","cornflour","breadcrumbs","sesame oil","tahini","peanut butter"],"Frozen":["frozen peas","frozen berries","ice cream"],"Drinks":["water","juice","coffee","tea","wine","beer","almond milk","oat milk","soy milk"],"Other":[]};
+const DAYS=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+function cat(n){const l=n.toLowerCase();for(const[c,ks]of Object.entries(CATS)){if(c==="Other")continue;for(const k of ks)if(l.includes(k))return c;}return"Other";}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
+function save(){localStorage.setItem('mp_r',JSON.stringify(S.recipes));localStorage.setItem('mp_p',JSON.stringify(S.plan));localStorage.setItem('mp_l',JSON.stringify(S.list));}
+function toast(m){S.toast=m;R();setTimeout(()=>{S.toast='';R();},2400);}
+function h(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function $(s,c){return(c||document).querySelector(s);}
+function $$(s,c){return(c||document).querySelectorAll(s);}
+function toSearch(n){let s=n.toLowerCase().trim().replace(/\(.*?\)/g,'');s=s.replace(/\b(finely|roughly|freshly|thinly|diced|chopped|sliced|minced|grated|crushed|ground|peeled|deseeded|trimmed|halved|quartered|torn|shredded|juiced|zested|melted|softened|room temperature|to taste|optional|for serving|for garnish|extra|good quality|large|medium|small|baby)\b/gi,'');return s.replace(/,/g,' ').replace(/\s+/g,' ').trim();}
 
-const CATS = {"Fruit & Veg":["onion","garlic","tomato","potato","carrot","lettuce","spinach","broccoli","capsicum","zucchini","mushroom","avocado","lemon","lime","ginger","chilli","coriander","parsley","basil","mint","thyme","rosemary","banana","apple","orange","berries","cucumber","celery","sweet potato","corn","peas","beans","kale","rocket","spring onion","shallot","leek","beetroot","pumpkin","eggplant","cabbage","cauliflower","asparagus"],"Meat & Seafood":["chicken","beef","pork","lamb","mince","sausage","bacon","ham","steak","salmon","prawns","fish","tuna","turkey","chorizo"],"Dairy & Eggs":["milk","cheese","butter","cream","yoghurt","egg","parmesan","mozzarella","cheddar","feta","ricotta","sour cream","cream cheese"],"Bakery":["bread","rolls","tortilla","pita","naan","wraps","pastry","puff pastry","sourdough"],"Pantry":["flour","sugar","salt","pepper","oil","olive oil","vinegar","soy sauce","fish sauce","oyster sauce","tomato paste","coconut milk","stock","rice","pasta","noodles","lentils","chickpeas","canned tomatoes","honey","maple syrup","mustard","ketchup","mayonnaise","cumin","paprika","turmeric","cinnamon","oregano","curry powder","chilli flakes","baking powder","vanilla","cocoa","cornflour","breadcrumbs","sesame oil","tahini","peanut butter"],"Frozen":["frozen peas","frozen berries","frozen spinach","ice cream"],"Drinks":["water","juice","coffee","tea","wine","beer","almond milk","oat milk","soy milk"],"Other":[]};
-const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
-
-function cat(n){ const l=n.toLowerCase(); for(const[c,ks]of Object.entries(CATS)){ if(c==="Other")continue; for(const k of ks)if(l.includes(k))return c; } return "Other"; }
-function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
-function save(){ localStorage.setItem('mp_r',JSON.stringify(S.recipes)); localStorage.setItem('mp_p',JSON.stringify(S.plan)); localStorage.setItem('mp_l',JSON.stringify(S.list)); }
-function toast(m){ S.toast=m; R(); setTimeout(()=>{S.toast='';R();},2400); }
-function h(s){ if(!s)return''; const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
-function $(sel,ctx){ return (ctx||document).querySelector(sel); }
-function $$(sel,ctx){ return (ctx||document).querySelectorAll(sel); }
-
-function toSearch(name){
-  let s = name.toLowerCase().trim().replace(/\(.*?\)/g,'');
-  s = s.replace(/\b(finely|roughly|freshly|thinly|coarsely|diced|chopped|sliced|minced|grated|crushed|ground|peeled|deseeded|trimmed|halved|quartered|torn|shredded|juiced|zested|melted|softened|room temperature|to taste|optional|for serving|for garnish|extra|good quality|large|medium|small|baby)\b/gi,'');
-  return s.replace(/,/g,' ').replace(/\s+/g,' ').trim();
-}
-
-// Check Woolworths auth on load
 fetch('/api/woolworths/auth-status').then(r=>r.json()).then(d=>{S.wwAuth=d;}).catch(()=>{S.wwAuth={loggedIn:false};}).finally(R);
 
-// ════════════════════════════════════════════════════════════
-//  RENDER
-// ════════════════════════════════════════════════════════════
+// ═══ RENDER ═══
 function R(){
-  const app = $('#app');
-  let html = '';
-
-  if(S.tab==='recipes') html = renderRecipes();
-  else if(S.tab==='planner') html = renderPlanner();
-  else if(S.tab==='shopping') html = renderShopping();
-
-  // Tab bar
-  const unchecked = S.list.filter(i=>!i.checked).length;
-  html += `<div class="tabs">
-    <button class="tab ${S.tab==='recipes'?'on':''}" data-tab="recipes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Recipes</button>
-    <button class="tab ${S.tab==='planner'?'on':''}" data-tab="planner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Planner</button>
-    <button class="tab ${S.tab==='shopping'?'on':''}" data-tab="shopping"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>Shopping${unchecked?`<span class="badge">${unchecked}</span>`:''}</button>
-  </div>`;
-
-  if(S.toast) html += `<div class="toast">${h(S.toast)}</div>`;
-
-  app.innerHTML = html;
-
-  // Bind tab clicks
-  $$('.tab',app).forEach(b => b.onclick = () => { S.tab=b.dataset.tab; R(); });
-
-  // Bind all data-action elements
-  bindActions(app);
+  const app=$('#app');let o='';
+  if(S.tab==='recipes')o=rRecipes();else if(S.tab==='planner')o=rPlanner();else if(S.tab==='shopping')o=rShopping();
+  const uc=S.list.filter(i=>!i.checked).length;
+  o+=`<div class="tabs"><button class="tab ${S.tab==='recipes'?'on':''}" data-t="recipes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Recipes</button><button class="tab ${S.tab==='planner'?'on':''}" data-t="planner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Planner</button><button class="tab ${S.tab==='shopping'?'on':''}" data-t="shopping"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>Shopping${uc?`<span class="badge">${uc}</span>`:''}</button></div>`;
+  if(S.toast)o+=`<div class="toast">${h(S.toast)}</div>`;
+  app.innerHTML=o;
+  $$('.tab',app).forEach(b=>b.onclick=()=>{S.tab=b.dataset.t;R();});
+  $$('[data-a]',app).forEach(el=>{el.onclick=e=>{e.stopPropagation();const a=el.dataset.a,id=el.dataset.id,day=el.dataset.day,idx=el.dataset.idx;
+    if(a==='add')showRecipeForm();else if(a==='imp')showImportModal();else if(a==='view')showDetail(S.recipes.find(r=>r.id===id));
+    else if(a==='plan')showDayPicker(el,id);else if(a==='pick')showPicker(day);
+    else if(a==='rmeal'){S.plan[day].splice(+idx,1);save();R();}else if(a==='clrp'){S.plan={};save();R();}
+    else if(a==='gen')genList();else if(a==='tog'){S.list[+idx].checked=!S.list[+idx].checked;save();R();}
+    else if(a==='clrc'){S.list=S.list.filter(i=>!i.checked);save();R();toast('Cleared');}
+    else if(a==='gop'){S.tab='planner';R();}else if(a==='ww')startWW();
+  };});
 }
 
-function bindActions(root){
-  $$('[data-action]',root).forEach(el => {
-    el.onclick = (e) => {
-      e.stopPropagation();
-      const action = el.dataset.action;
-      const id = el.dataset.id;
-      const day = el.dataset.day;
-      const idx = el.dataset.idx;
-
-      if(action==='addRecipe') showRecipeForm();
-      else if(action==='importRecipe') showImportModal();
-      else if(action==='viewRecipe') showRecipeDetail(S.recipes.find(r=>r.id===id));
-      else if(action==='addToPlan') showDayPicker(el, id);
-      else if(action==='pickMeal') showRecipePicker(day);
-      else if(action==='removeMeal'){ S.plan[day].splice(+idx,1); save(); R(); }
-      else if(action==='clearPlan'){ S.plan={}; save(); R(); }
-      else if(action==='genList') generateList();
-      else if(action==='toggleItem'){ S.list[+idx].checked=!S.list[+idx].checked; save(); R(); }
-      else if(action==='clearChecked'){ S.list=S.list.filter(i=>!i.checked); save(); R(); toast('Cleared'); }
-      else if(action==='goPlanner'){ S.tab='planner'; R(); }
-      else if(action==='sendWoolworths') startWoolworths();
-    };
-  });
+function rRecipes(){
+  let o=`<div class="hd"><h1>Recipes</h1><div class="hda"><button class="ib" data-a="imp">🔗</button><button class="ib" data-a="add">+</button></div></div>`;
+  if(!S.recipes.length)return o+`<div class="empty"><div style="font-size:48px;opacity:.3;margin-bottom:8px">📖</div><p>No recipes yet</p><div style="display:flex;gap:8px;justify-content:center"><button class="btn bp" data-a="add">Add Manually</button><button class="btn bo" data-a="imp">Import URL</button></div></div>`;
+  S.recipes.forEach(r=>{o+=`<div class="card"><div class="ct" data-a="view" data-id="${r.id}">${h(r.name)}</div>${r.description?`<p style="font-size:13px;color:var(--muted);margin-bottom:6px">${h(r.description)}</p>`:''}<div class="cm">${r.servings?`<span>🍽 ${h(r.servings)}</span>`:''}${r.prepTime?`<span>⏱ ${h(r.prepTime)}</span>`:''}${r.cookTime?`<span>🔥 ${h(r.cookTime)}</span>`:''}<span>📝 ${r.ingredients.length} ing.</span></div><div style="display:flex;gap:8px;margin-top:12px"><button class="chip" data-a="view" data-id="${r.id}">View</button><div class="ddw"><button class="chip ca" data-a="plan" data-id="${r.id}">+ Plan</button></div></div></div>`;});
+  return o;
 }
 
-// ════════════════════════════════════════════════════════════
-//  RECIPES TAB
-// ════════════════════════════════════════════════════════════
-function renderRecipes(){
-  let html = `<div class="header"><h1>Recipes</h1><div class="hdr-btns">
-    <button class="ibtn" data-action="importRecipe">🔗</button>
-    <button class="ibtn" data-action="addRecipe">+</button>
-  </div></div>`;
-
-  if(!S.recipes.length){
-    return html + `<div class="empty"><div style="font-size:48px;opacity:.3;margin-bottom:8px">📖</div><p>No recipes yet</p>
-      <div style="display:flex;gap:8px;justify-content:center"><button class="btn btn-p" data-action="addRecipe">Add Manually</button><button class="btn btn-o" data-action="importRecipe">Import URL</button></div></div>`;
-  }
-
-  S.recipes.forEach(r => {
-    html += `<div class="card">
-      <div class="card-t" data-action="viewRecipe" data-id="${r.id}">${h(r.name)}</div>
-      ${r.description?`<p style="font-size:13px;color:var(--muted);margin-bottom:6px">${h(r.description)}</p>`:''}
-      <div class="card-m">${r.servings?`<span>🍽 ${h(r.servings)}</span>`:''}${r.prepTime?`<span>⏱ ${h(r.prepTime)}</span>`:''}${r.cookTime?`<span>🔥 ${h(r.cookTime)}</span>`:''}
-        <span>📝 ${r.ingredients.length} ing.</span></div>
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <button class="chip" data-action="viewRecipe" data-id="${r.id}">View</button>
-        <div class="dd-wrap"><button class="chip chip-a" data-action="addToPlan" data-id="${r.id}">+ Add to Plan</button></div>
-      </div>
-    </div>`;
-  });
-  return html;
+function rPlanner(){
+  const tot=Object.values(S.plan).flat().length;
+  let o=`<div class="hd"><h1>Week Planner</h1><button class="btn bp" data-a="gen" ${tot?'':'disabled'}>Generate List</button></div>`;
+  if(tot)o+=`<div style="padding:0 16px 10px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:var(--muted)">${tot} meal${tot>1?'s':''}</span><button class="chip" data-a="clrp">Clear all</button></div>`;
+  DAYS.forEach(d=>{const rs=(S.plan[d]||[]).map(id=>S.recipes.find(r=>r.id===id)).filter(Boolean);o+=`<div class="dc"><div class="dl">${d}</div>${rs.map((r,i)=>`<div class="dr"><span>${h(r.name)}</span><button data-a="rmeal" data-day="${d}" data-idx="${i}">✕</button></div>`).join('')}<button class="chip" style="margin-top:4px" data-a="pick" data-day="${d}">+ Add meal</button></div>`;});
+  return o;
 }
 
-// ════════════════════════════════════════════════════════════
-//  PLANNER TAB
-// ════════════════════════════════════════════════════════════
-function renderPlanner(){
-  const total = Object.values(S.plan).flat().length;
-  let html = `<div class="header"><h1>Week Planner</h1><button class="btn btn-p" data-action="genList" ${total?'':'disabled'}>Generate List</button></div>`;
-  if(total) html += `<div style="padding:0 16px 10px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:var(--muted)">${total} meal${total>1?'s':''}</span><button class="chip" data-action="clearPlan">Clear all</button></div>`;
-
-  DAYS.forEach(day => {
-    const recipes = (S.plan[day]||[]).map(id=>S.recipes.find(r=>r.id===id)).filter(Boolean);
-    html += `<div class="dc"><div class="dl">${day}</div>`;
-    recipes.forEach((r,i) => { html += `<div class="dr"><span>${h(r.name)}</span><button data-action="removeMeal" data-day="${day}" data-idx="${i}">✕</button></div>`; });
-    html += `<button class="chip" style="margin-top:4px" data-action="pickMeal" data-day="${day}">+ Add meal</button></div>`;
-  });
-  return html;
+function rShopping(){
+  let o=`<div class="hd"><h1>Shopping</h1><div class="hda">${S.list.length?`<button class="ib" data-a="clrc">🗑</button>`:''}</div></div>`;
+  if(!S.list.length)return o+`<div class="empty"><div style="font-size:48px;opacity:.3;margin-bottom:8px">🛒</div><p>No shopping list yet</p><button class="btn bp" data-a="gop">Go to Planner</button></div>`;
+  const dn=S.list.filter(i=>i.checked).length,tt=S.list.length;
+  o+=`<div style="padding:0 16px"><div style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:6px"><span>${dn} of ${tt}</span><span>${Math.round(dn/tt*100)}%</span></div><div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="height:100%;width:${dn/tt*100}%;background:var(--green);border-radius:3px"></div></div></div>`;
+  o+=`<button class="bw" data-a="ww" ${dn===tt?'disabled':''}>🛒 Send to Woolworths</button>`;
+  o+=`<p style="font-size:12px;color:var(--muted);text-align:center;margin:8px 0 16px;line-height:1.5">${S.wwAuth?.loggedIn?'Logged in as '+h(S.wwAuth.email)+'.':'Search products, then add to cart or open product pages.'}</p>`;
+  const gr={};S.list.forEach((it,i)=>{if(!gr[it.category])gr[it.category]=[];gr[it.category].push({...it,_i:i});});
+  Object.keys(CATS).forEach(c=>{if(!gr[c]?.length)return;o+=`<div class="ch">${c}</div>`;gr[c].forEach(it=>{o+=`<div class="si"><div class="sc ${it.checked?'ck':''}" data-a="tog" data-idx="${it._i}">${it.checked?'✓':''}</div><span style="flex:1;font-size:14px;${it.checked?'text-decoration:line-through;color:var(--muted)':''}">${h(it.name)}</span>${it.amount?`<span style="font-size:13px;color:var(--muted)">${h(it.amount)}${it.unit?' '+h(it.unit):''}</span>`:''}</div>`;});});
+  o+='</div>';return o;
 }
 
-// ════════════════════════════════════════════════════════════
-//  SHOPPING TAB
-// ════════════════════════════════════════════════════════════
-function renderShopping(){
-  let html = `<div class="header"><h1>Shopping</h1><div class="hdr-btns">${S.list.length?`<button class="ibtn" data-action="clearChecked">🗑</button>`:''}</div></div>`;
-
-  if(!S.list.length){
-    return html + `<div class="empty"><div style="font-size:48px;opacity:.3;margin-bottom:8px">🛒</div><p>No shopping list yet</p><button class="btn btn-p" data-action="goPlanner">Go to Planner</button></div>`;
-  }
-
-  const done = S.list.filter(i=>i.checked).length, total = S.list.length;
-  html += `<div style="padding:0 16px">
-    <div style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:6px"><span>${done} of ${total}</span><span>${Math.round(done/total*100)}%</span></div>
-    <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="height:100%;width:${done/total*100}%;background:var(--green);border-radius:3px;transition:width .3s"></div></div></div>
-    <button class="btn-ww" data-action="sendWoolworths" ${done===total?'disabled':''}>🛒 Send to Woolworths</button>
-    <p style="font-size:12px;color:var(--muted);text-align:center;margin:8px 0 16px;line-height:1.5">${S.wwAuth?.loggedIn ? 'Logged in as '+h(S.wwAuth.email)+'. Items will be added to your cart automatically.' : 'Search products, then add to your Woolworths cart or open product pages directly.'}</p>`;
-
-  const grouped = {};
-  S.list.forEach((item,i) => { if(!grouped[item.category])grouped[item.category]=[]; grouped[item.category].push({...item,_i:i}); });
-
-  Object.keys(CATS).forEach(c => {
-    if(!grouped[c]?.length) return;
-    html += `<div class="ch">${c}</div>`;
-    grouped[c].forEach(item => {
-      html += `<div class="si"><div class="sc ${item.checked?'ck':''}" data-action="toggleItem" data-idx="${item._i}">${item.checked?'✓':''}</div>
-        <span style="flex:1;font-size:14px;${item.checked?'text-decoration:line-through;color:var(--muted)':''}">${h(item.name)}</span>
-        ${item.amount?`<span style="font-size:13px;color:var(--muted)">${h(item.amount)}${item.unit?' '+h(item.unit):''}</span>`:''}
-      </div>`;
-    });
-  });
-  html += '</div>';
-  return html;
+function genList(){
+  const all={};const ids=new Set();Object.values(S.plan).flat().forEach(id=>ids.add(id));
+  for(const rid of ids){const r=S.recipes.find(x=>x.id===rid);if(!r)continue;let c=0;Object.values(S.plan).flat().forEach(id=>{if(id===rid)c++;});
+    for(const ing of r.ingredients){const k=ing.name.toLowerCase().trim();if(!all[k])all[k]={name:ing.name,amount:ing.amount||'',unit:ing.unit||'',category:cat(ing.name),checked:false};
+      else{const ex=all[k];if(ex.unit===ing.unit&&!isNaN(parseFloat(ex.amount))&&!isNaN(parseFloat(ing.amount)))ex.amount=String(parseFloat(ex.amount)+parseFloat(ing.amount)*c);else if(ing.amount)ex.amount=ex.amount?`${ex.amount} + ${ing.amount}${ing.unit?' '+ing.unit:''}`:ing.amount;}}}
+  S.list=Object.values(all).sort((a,b)=>a.category.localeCompare(b.category));save();S.tab='shopping';R();toast(`${S.list.length} items`);
 }
 
-// ════════════════════════════════════════════════════════════
-//  GENERATE LIST
-// ════════════════════════════════════════════════════════════
-function generateList(){
-  const allIngs = {};
-  const ids = new Set();
-  Object.values(S.plan).flat().forEach(id=>ids.add(id));
-  for(const rid of ids){
-    const r = S.recipes.find(x=>x.id===rid);
-    if(!r) continue;
-    let count = 0;
-    Object.values(S.plan).flat().forEach(id=>{if(id===rid)count++;});
-    for(const ing of r.ingredients){
-      const key = ing.name.toLowerCase().trim();
-      if(!allIngs[key]) allIngs[key]={name:ing.name,amount:ing.amount||'',unit:ing.unit||'',category:cat(ing.name),checked:false};
-      else{
-        const ex=allIngs[key];
-        if(ex.unit===ing.unit && !isNaN(parseFloat(ex.amount)) && !isNaN(parseFloat(ing.amount)))
-          ex.amount=String(parseFloat(ex.amount)+parseFloat(ing.amount)*count);
-        else if(ing.amount) ex.amount=ex.amount?`${ex.amount} + ${ing.amount}${ing.unit?' '+ing.unit:''}`:ing.amount;
-      }
-    }
-  }
-  S.list = Object.values(allIngs).sort((a,b)=>a.category.localeCompare(b.category));
-  save(); S.tab='shopping'; R(); toast(`${S.list.length} items`);
+// ═══ MODALS ═══
+function modal(title,html,fn){
+  const ov=document.createElement('div');ov.className='mo';
+  ov.innerHTML=`<div class="mb"><div class="mh"><h2>${title}</h2><button class="xb" id="_x">✕</button></div><div id="_c">${html}</div></div>`;
+  document.body.appendChild(ov);const cl=()=>ov.remove();$('#_x',ov).onclick=cl;ov.onclick=e=>{if(e.target===ov)cl();};if(fn)fn($('#_c',ov),cl);return{ov,cl};
 }
 
-// ════════════════════════════════════════════════════════════
-//  MODALS
-// ════════════════════════════════════════════════════════════
-function modal(title, contentHtml, onMount){
-  const ov = document.createElement('div');
-  ov.className='mo';
-  ov.innerHTML=`<div class="mb"><div class="mh"><h2>${title}</h2><button class="xb" id="_xb">✕</button></div><div id="_mc">${contentHtml}</div></div>`;
-  document.body.appendChild(ov);
-  const close = ()=>ov.remove();
-  $('#_xb',ov).onclick=close;
-  ov.onclick=e=>{if(e.target===ov)close();};
-  if(onMount) onMount($('#_mc',ov), close);
-  return {ov, close};
-}
-
-// ── Import Recipe ────────────────────────────────────────
+// ═══ IMPORT with REVIEW ═══
 function showImportModal(){
-  modal('Import Recipe', `
-    <div class="fg"><label class="fl">Recipe URL</label><input class="fi" id="iurl" placeholder="https://www.taste.com.au/recipes/..."></div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Works with most recipe websites — taste.com.au, delicious.com.au, BBC Good Food, AllRecipes, and more.</p>
-    <div id="ierr" style="font-size:13px;color:#c53030;margin-bottom:12px;display:none"></div>
-    <button class="btn btn-p" style="width:100%" id="igo">Import Recipe</button>
-  `, (mc, close) => {
-    const urlInput = $('#iurl',mc);
-    const errDiv = $('#ierr',mc);
-    const btn = $('#igo',mc);
-
-    urlInput.addEventListener('keydown', e=>{if(e.key==='Enter')doImport();});
-    btn.onclick = doImport;
+  modal('Import Recipe',`<div class="fg"><label class="fl">Recipe URL</label><input class="fi" id="iu" placeholder="https://www.taste.com.au/recipes/..."></div><p style="font-size:13px;color:var(--muted);margin-bottom:16px">Works with taste.com.au, BBC Good Food, AllRecipes and most recipe sites.</p><div id="ie" style="font-size:13px;color:#c53030;margin-bottom:12px;display:none"></div><div id="rv"></div><button class="btn bp" style="width:100%" id="ig">Import Recipe</button>`,(mc,cl)=>{
+    const ui=$('#iu',mc),er=$('#ie',mc),rv=$('#rv',mc),btn=$('#ig',mc);
+    let pendingRecipe=null;
+    ui.addEventListener('keydown',e=>{if(e.key==='Enter')doImport();});
+    btn.onclick=()=>{if(pendingRecipe)saveImported();else doImport();};
 
     async function doImport(){
-      const url = urlInput.value.trim();
-      if(!url) return;
-      btn.disabled=true; btn.innerHTML='<span class="spin"></span> Importing...';
-      errDiv.style.display='none';
-
+      const url=ui.value.trim();if(!url)return;
+      btn.disabled=true;btn.innerHTML='<span class="spin"></span> Importing...';er.style.display='none';rv.innerHTML='';pendingRecipe=null;
       try{
-        const resp = await fetch('/api/import-recipe', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({url})
-        });
-        const data = await resp.json();
-
-        if(data.success && data.recipe){
-          const r = data.recipe;
-          r.id = uid();
-          r.ingredients = r.ingredients.map(i=>({...i, id:uid()}));
-          S.recipes.push(r);
-          save(); close(); R();
-          toast('Recipe imported!');
-        } else {
-          errDiv.textContent = data.error || 'Could not extract recipe. Try adding manually.';
-          errDiv.style.display='block';
-          btn.disabled=false; btn.textContent='Import Recipe';
-
-          // If we got partial data, offer to pre-fill form
+        const resp=await fetch('/api/import-recipe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+        const data=await resp.json();
+        if(data.success&&data.recipe){
+          pendingRecipe=data.recipe;
+          // ── SHOW REVIEW ──
+          rv.innerHTML=`<div class="rvw"><h3>📋 Review before saving</h3>
+            <p style="font-size:14px;font-weight:600;margin-bottom:8px">${h(pendingRecipe.name)}</p>
+            ${pendingRecipe.description?`<p style="font-size:13px;color:var(--muted);margin-bottom:8px">${h(pendingRecipe.description)}</p>`:''}
+            <div style="font-size:13px;color:var(--muted);margin-bottom:8px">${pendingRecipe.servings?'🍽 '+h(pendingRecipe.servings)+' · ':''}${pendingRecipe.prepTime?'⏱ '+h(pendingRecipe.prepTime)+' · ':''}${pendingRecipe.cookTime?'🔥 '+h(pendingRecipe.cookTime):''}</div>
+            ${pendingRecipe._warning?`<div class="warn">⚠ ${h(pendingRecipe._warning)}</div>`:''}
+            <div style="font-size:12px;font-weight:600;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Ingredients (${pendingRecipe.ingredients.length})</div>
+            ${pendingRecipe.ingredients.map(i=>`<div style="font-size:13px;padding:3px 0">${i.amount?'<b>'+h(i.amount)+(i.unit?' '+h(i.unit):'')+'</b> ':''}<span>${h(i.name)}</span></div>`).join('')}
+            ${pendingRecipe.steps.length?`<div style="font-size:12px;font-weight:600;text-transform:uppercase;color:var(--muted);margin:8px 0 4px">Steps (${pendingRecipe.steps.length})</div>${pendingRecipe.steps.map((s,i)=>`<div style="font-size:13px;padding:3px 0"><b>${i+1}.</b> ${h(s.substring(0,120))}${s.length>120?'...':''}</div>`).join('')}`:''}
+          </div>`;
+          btn.disabled=false;btn.textContent='✓ Looks good — Save recipe';
+          btn.className='btn bg';btn.style.width='100%';
+        }else{
+          er.textContent=data.error||'Could not extract recipe.';er.style.display='block';
+          btn.disabled=false;btn.textContent='Import Recipe';
           if(data.partialData){
-            errDiv.innerHTML += `<br><button class="btn btn-o" style="margin-top:8px" id="manualFill">Add manually with title "${h(data.partialData.name)}"</button>`;
-            $('#manualFill',mc).onclick = ()=>{ close(); showRecipeForm({name:data.partialData.name, description:data.partialData.description||'', sourceUrl:url}); };
+            er.innerHTML+=`<br><button class="btn bo" style="margin-top:8px;font-size:12px" id="mf">Add manually as "${h(data.partialData.name)}"</button>`;
+            $('#mf',mc).onclick=()=>{cl();showRecipeForm({name:data.partialData.name,sourceUrl:url});};
           }
         }
-      }catch(e){
-        errDiv.textContent='Network error. Please try again.';
-        errDiv.style.display='block';
-        btn.disabled=false; btn.textContent='Import Recipe';
-      }
+      }catch(e){er.textContent='Network error.';er.style.display='block';btn.disabled=false;btn.textContent='Import Recipe';}
+    }
+
+    function saveImported(){
+      if(!pendingRecipe)return;
+      pendingRecipe.id=uid();
+      pendingRecipe.ingredients=pendingRecipe.ingredients.map(i=>({...i,id:uid()}));
+      S.recipes.push(pendingRecipe);save();cl();R();toast('Recipe imported!');
     }
   });
 }
 
-// ── Recipe Form ──────────────────────────────────────────
+// ═══ RECIPE FORM ═══
 function showRecipeForm(existing){
-  const r = existing || {name:'',description:'',servings:'4',prepTime:'',cookTime:'',ingredients:[{id:uid(),amount:'',unit:'',name:''}],steps:[''],sourceUrl:''};
-  if(!r.ingredients) r.ingredients=[{id:uid(),amount:'',unit:'',name:''}];
-  if(!r.steps) r.steps=[''];
-
-  let ings = [...r.ingredients];
-  let steps = [...r.steps];
-
-  modal(existing?.id?'Edit Recipe':'Add Recipe','<div id="rf"></div>',(mc,close)=>{
-    function renderForm(){
-      const rf=$('#rf',mc);
-      rf.innerHTML=`
-        <div class="fg"><label class="fl">Recipe Name *</label><input class="fi" id="fn" value="${h(r.name)}" placeholder="e.g. Spaghetti Bolognese"></div>
-        <div class="fg"><label class="fl">Description</label><input class="fi" id="fd" value="${h(r.description||'')}" placeholder="Optional"></div>
-        <div class="fr">
-          <div class="fg"><label class="fl">Servings</label><input class="fi" id="fs" value="${h(r.servings||'4')}"></div>
-          <div class="fg"><label class="fl">Prep</label><input class="fi" id="fp" value="${h(r.prepTime||'')}" placeholder="15 min"></div>
-          <div class="fg"><label class="fl">Cook</label><input class="fi" id="fc" value="${h(r.cookTime||'')}" placeholder="30 min"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;margin:16px 0 10px"><label class="fl" style="margin:0">Ingredients</label><button class="chip" id="ai">+ Add</button></div>
-        <div id="il"></div>
-        <div style="display:flex;justify-content:space-between;margin:16px 0 10px"><label class="fl" style="margin:0">Method</label><button class="chip" id="as">+ Add Step</button></div>
-        <div id="sl"></div>
-        <div style="display:flex;gap:10px;margin-top:20px"><button class="btn btn-p" style="flex:1" id="sv">${existing?.id?'Save':'Add Recipe'}</button><button class="btn btn-s" id="cn">Cancel</button></div>
-      `;
-      // Ingredients
-      const il=$('#il',rf);
-      ings.forEach((ing,i)=>{
-        const row=document.createElement('div'); row.className='ir';
-        row.innerHTML=`<input class="fi ia" placeholder="Qty" value="${h(ing.amount)}" data-i="${i}" data-f="amount">
-          <input class="fi iu" placeholder="Unit" value="${h(ing.unit)}" data-i="${i}" data-f="unit">
-          <input class="fi in" placeholder="Ingredient" value="${h(ing.name)}" data-i="${i}" data-f="name">
-          ${ings.length>1?`<button class="ix" data-ri="${i}">✕</button>`:''}`;
-        $$('input',row).forEach(inp=>{ inp.oninput=()=>{ings[+inp.dataset.i][inp.dataset.f]=inp.value;}; });
-        const rm=$('.ix',row); if(rm) rm.onclick=()=>{ings.splice(i,1);renderForm();};
-        il.appendChild(row);
-      });
-      // Steps
-      const sl=$('#sl',rf);
-      steps.forEach((s,i)=>{
-        const row=document.createElement('div'); row.className='sr';
-        row.innerHTML=`<div class="sn">${i+1}</div><textarea class="fi" data-si="${i}" placeholder="Step ${i+1}...">${h(s)}</textarea>
-          ${steps.length>1?`<button class="ix" style="margin-top:8px" data-rs="${i}">✕</button>`:''}`;
-        $('textarea',row).oninput=e=>{steps[+e.target.dataset.si]=e.target.value;};
-        const rm=$('.ix',row); if(rm) rm.onclick=()=>{steps.splice(i,1);renderForm();};
-        sl.appendChild(row);
-      });
-      $('#ai',rf).onclick=()=>{ings.push({id:uid(),amount:'',unit:'',name:''});renderForm();};
-      $('#as',rf).onclick=()=>{steps.push('');renderForm();};
-      $('#cn',rf).onclick=close;
-      $('#sv',rf).onclick=()=>{
-        const name=$('#fn',rf).value.trim(); if(!name)return;
-        const recipe={
-          id:existing?.id||uid(), name,
-          description:$('#fd',rf).value.trim(),
-          servings:$('#fs',rf).value,
-          prepTime:$('#fp',rf).value,
-          cookTime:$('#fc',rf).value,
-          ingredients:ings.filter(i=>i.name.trim()),
-          steps:steps.filter(s=>s.trim()),
-          sourceUrl:r.sourceUrl||'',
-        };
-        if(existing?.id){ const idx=S.recipes.findIndex(x=>x.id===existing.id); if(idx!==-1)S.recipes[idx]=recipe; }
-        else S.recipes.push(recipe);
-        save(); close(); R(); toast(existing?.id?'Updated!':'Added!');
-      };
-    }
-    renderForm();
+  const r=existing||{name:'',description:'',servings:'4',prepTime:'',cookTime:'',ingredients:[{id:uid(),amount:'',unit:'',name:''}],steps:[''],sourceUrl:''};
+  if(!r.ingredients?.length)r.ingredients=[{id:uid(),amount:'',unit:'',name:''}];if(!r.steps?.length)r.steps=[''];
+  let ings=[...r.ingredients],steps=[...r.steps];
+  modal(existing?.id?'Edit Recipe':'Add Recipe','<div id="rf"></div>',(mc,cl)=>{
+    function rf(){
+      const el=$('#rf',mc);
+      el.innerHTML=`<div class="fg"><label class="fl">Name *</label><input class="fi" id="fn" value="${h(r.name)}"></div><div class="fg"><label class="fl">Description</label><input class="fi" id="fd" value="${h(r.description||'')}"></div><div class="fr"><div class="fg"><label class="fl">Servings</label><input class="fi" id="fs" value="${h(r.servings||'4')}"></div><div class="fg"><label class="fl">Prep</label><input class="fi" id="fp" value="${h(r.prepTime||'')}"></div><div class="fg"><label class="fl">Cook</label><input class="fi" id="fc" value="${h(r.cookTime||'')}"></div></div><div style="display:flex;justify-content:space-between;margin:16px 0 10px"><label class="fl" style="margin:0">Ingredients</label><button class="chip" id="ai">+ Add</button></div><div id="il"></div><div style="display:flex;justify-content:space-between;margin:16px 0 10px"><label class="fl" style="margin:0">Method</label><button class="chip" id="as">+ Step</button></div><div id="sl"></div><div style="display:flex;gap:10px;margin-top:20px"><button class="btn bp" style="flex:1" id="sv">${existing?.id?'Save':'Add Recipe'}</button><button class="btn bs" id="cn">Cancel</button></div>`;
+      const il=$('#il',el);ings.forEach((ing,i)=>{const row=document.createElement('div');row.className='ir';row.innerHTML=`<input class="fi ia" placeholder="Qty" value="${h(ing.amount)}" data-i="${i}" data-f="amount"><input class="fi iu" placeholder="Unit" value="${h(ing.unit)}" data-i="${i}" data-f="unit"><input class="fi in" placeholder="Ingredient" value="${h(ing.name)}" data-i="${i}" data-f="name">${ings.length>1?`<button class="ix" data-ri="${i}">✕</button>`:''}`;$$('input',row).forEach(inp=>{inp.oninput=()=>{ings[+inp.dataset.i][inp.dataset.f]=inp.value;};});const rm=$('.ix',row);if(rm)rm.onclick=()=>{ings.splice(i,1);rf();};il.appendChild(row);});
+      const sl=$('#sl',el);steps.forEach((s,i)=>{const row=document.createElement('div');row.className='srow';row.innerHTML=`<div class="snum">${i+1}</div><textarea class="fi" data-si="${i}">${h(s)}</textarea>${steps.length>1?`<button class="ix" style="margin-top:8px" data-rs="${i}">✕</button>`:''}`;$('textarea',row).oninput=e=>{steps[+e.target.dataset.si]=e.target.value;};const rm=$('.ix',row);if(rm)rm.onclick=()=>{steps.splice(i,1);rf();};sl.appendChild(row);});
+      $('#ai',el).onclick=()=>{ings.push({id:uid(),amount:'',unit:'',name:''});rf();};
+      $('#as',el).onclick=()=>{steps.push('');rf();};$('#cn',el).onclick=cl;
+      $('#sv',el).onclick=()=>{const name=$('#fn',el).value.trim();if(!name)return;const rec={id:existing?.id||uid(),name,description:$('#fd',el).value.trim(),servings:$('#fs',el).value,prepTime:$('#fp',el).value,cookTime:$('#fc',el).value,ingredients:ings.filter(i=>i.name.trim()),steps:steps.filter(s=>s.trim()),sourceUrl:r.sourceUrl||''};if(existing?.id){const idx=S.recipes.findIndex(x=>x.id===existing.id);if(idx!==-1)S.recipes[idx]=rec;}else S.recipes.push(rec);save();cl();R();toast(existing?.id?'Updated!':'Added!');};
+    }rf();
   });
 }
 
-// ── Recipe Detail ────────────────────────────────────────
-function showRecipeDetail(r){
-  if(!r)return;
-  modal(r.name,`
-    ${r.description?`<p style="font-size:14px;color:var(--muted);margin-bottom:12px">${h(r.description)}</p>`:''}
-    <div class="card-m" style="margin-bottom:16px">${r.servings?`<span>🍽 ${h(r.servings)}</span>`:''}${r.prepTime?`<span>⏱ ${h(r.prepTime)}</span>`:''}${r.cookTime?`<span>🔥 ${h(r.cookTime)}</span>`:''}</div>
-    ${r.sourceUrl?`<p style="font-size:12px;color:var(--muted);margin-bottom:12px">Source: <a href="${h(r.sourceUrl)}" target="_blank" style="color:var(--accent)">${h(new URL(r.sourceUrl).hostname)}</a></p>`:''}
-    <div class="ch">Ingredients</div>
-    ${r.ingredients.map(i=>`<div style="padding:6px 0;font-size:14px;display:flex;gap:6px">${(i.amount||i.unit)?`<b style="color:var(--accent);font-weight:600">${h(i.amount)}${i.unit?' '+h(i.unit):''}</b>`:''}<span>${h(i.name)}</span></div>`).join('')}
-    ${r.steps?.length?`<div class="ch" style="margin-top:8px">Method</div>${r.steps.map((s,i)=>`<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)"><div class="sn">${i+1}</div><p style="font-size:14px;line-height:1.6">${h(s)}</p></div>`).join('')}`:''}
-    <div style="display:flex;gap:10px;margin-top:20px"><button class="btn btn-o" style="flex:1" id="edt">Edit</button><button class="btn btn-d" id="del">Delete</button></div>
-  `,(mc,close)=>{
-    $('#edt',mc).onclick=()=>{close();showRecipeForm(r);};
-    $('#del',mc).onclick=()=>{
-      if(!confirm('Delete this recipe?'))return;
-      S.recipes=S.recipes.filter(x=>x.id!==r.id);
-      for(const d in S.plan) S.plan[d]=(S.plan[d]||[]).filter(id=>id!==r.id);
-      save(); close(); R(); toast('Deleted');
-    };
-  });
-}
+function showDetail(r){if(!r)return;modal(r.name,`${r.description?`<p style="font-size:14px;color:var(--muted);margin-bottom:12px">${h(r.description)}</p>`:''}<div class="cm" style="margin-bottom:16px">${r.servings?`<span>🍽 ${h(r.servings)}</span>`:''}${r.prepTime?`<span>⏱ ${h(r.prepTime)}</span>`:''}${r.cookTime?`<span>🔥 ${h(r.cookTime)}</span>`:''}</div>${r.sourceUrl?`<p style="font-size:12px;color:var(--muted);margin-bottom:12px">Source: <a href="${h(r.sourceUrl)}" target="_blank" style="color:var(--accent)">${h(new URL(r.sourceUrl).hostname)}</a></p>`:''}<div class="ch">Ingredients</div>${r.ingredients.map(i=>`<div style="padding:6px 0;font-size:14px;display:flex;gap:6px">${(i.amount||i.unit)?`<b style="color:var(--accent)">${h(i.amount)}${i.unit?' '+h(i.unit):''}</b>`:''}<span>${h(i.name)}</span></div>`).join('')}${r.steps?.length?`<div class="ch" style="margin-top:8px">Method</div>${r.steps.map((s,i)=>`<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)"><div class="snum">${i+1}</div><p style="font-size:14px;line-height:1.6">${h(s)}</p></div>`).join('')}`:''}<div style="display:flex;gap:10px;margin-top:20px"><button class="btn bo" style="flex:1" id="ed">Edit</button><button class="btn bd" id="dl">Delete</button></div>`,(mc,cl)=>{$('#ed',mc).onclick=()=>{cl();showRecipeForm(r);};$('#dl',mc).onclick=()=>{if(!confirm('Delete?'))return;S.recipes=S.recipes.filter(x=>x.id!==r.id);for(const d in S.plan)S.plan[d]=(S.plan[d]||[]).filter(id=>id!==r.id);save();cl();R();toast('Deleted');};});}
 
-// ── Recipe Picker ────────────────────────────────────────
-function showRecipePicker(day){
-  modal('Add to '+day, S.recipes.length?S.recipes.map(r=>`<div class="link-item" data-rid="${r.id}" style="cursor:pointer"><span style="font-weight:500">${h(r.name)}</span><span class="link-arrow">→</span></div>`).join(''):`<p style="color:var(--muted)">No recipes yet.</p>`,
-  (mc,close)=>{
-    $$('.link-item',mc).forEach(el=>{
-      el.onclick=()=>{
-        if(!S.plan[day])S.plan[day]=[];
-        S.plan[day].push(el.dataset.rid);
-        save(); close(); R(); toast(`Added to ${day}`);
-      };
-    });
-  });
-}
+function showPicker(day){modal('Add to '+day,S.recipes.length?S.recipes.map(r=>`<div class="lnk" data-rid="${r.id}" style="cursor:pointer"><span style="font-weight:500">${h(r.name)}</span><span style="color:var(--muted);font-size:12px;flex-shrink:0">${r.ingredients.length} ing.</span></div>`).join(''):'<p style="color:var(--muted)">No recipes yet.</p>',(mc,cl)=>{$$('.lnk',mc).forEach(el=>{el.onclick=()=>{if(!S.plan[day])S.plan[day]=[];S.plan[day].push(el.dataset.rid);save();cl();R();toast(`Added to ${day}`);};});});}
 
-// ── Day Picker Dropdown ──────────────────────────────────
-function showDayPicker(target, recipeId){
-  // Remove any existing
-  const old=document.querySelector('.dd-menu'); if(old)old.remove();
-  const wrap = target.closest('.dd-wrap');
-  if(!wrap)return;
-  const dd=document.createElement('div'); dd.className='dd-menu';
-  DAYS.forEach(d=>{
-    const btn=document.createElement('button'); btn.textContent=d;
-    btn.onclick=(e)=>{
-      e.stopPropagation();
-      if(!S.plan[d])S.plan[d]=[];
-      S.plan[d].push(recipeId);
-      save(); dd.remove(); R(); toast(`Added to ${d}`);
-    };
-    dd.appendChild(btn);
-  });
-  wrap.appendChild(dd);
-  setTimeout(()=>{
-    const handler=e=>{if(!dd.contains(e.target)&&e.target!==target){dd.remove();document.removeEventListener('click',handler);}};
-    document.addEventListener('click',handler);
-  },10);
-}
+function showDayPicker(target,rid){const old=document.querySelector('.ddm');if(old)old.remove();const wrap=target.closest('.ddw');if(!wrap)return;const dd=document.createElement('div');dd.className='ddm';DAYS.forEach(d=>{const b=document.createElement('button');b.textContent=d;b.onclick=e=>{e.stopPropagation();if(!S.plan[d])S.plan[d]=[];S.plan[d].push(rid);save();dd.remove();R();toast(`Added to ${d}`);};dd.appendChild(b);});wrap.appendChild(dd);setTimeout(()=>{const fn=e=>{if(!dd.contains(e.target)&&e.target!==target){dd.remove();document.removeEventListener('click',fn);}};document.addEventListener('click',fn);},10);}
 
-// ════════════════════════════════════════════════════════════
-//  WOOLWORTHS FLOW
-// ════════════════════════════════════════════════════════════
-async function startWoolworths(){
-  const unchecked = S.list.filter(i=>!i.checked);
-  if(!unchecked.length) return;
-
-  // Show loading overlay
-  const ov=document.createElement('div'); ov.className='ww-ov';
-  ov.innerHTML=`<div class="ww-fl">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-      <div><div style="font-size:12px;font-weight:700;color:var(--ww);text-transform:uppercase;letter-spacing:.08em">Woolworths</div>
-      <div style="font-size:13px;color:var(--muted)">Finding products...</div></div>
-      <button class="xb" id="wwx">✕</button>
-    </div>
-    <div style="text-align:center;padding:40px"><div class="spin spin-d" style="width:32px;height:32px"></div>
-    <p style="margin-top:16px;color:var(--muted)">Searching for ${unchecked.length} items...</p></div>
-  </div>`;
-  document.body.appendChild(ov);
-  $('#wwx',ov).onclick=()=>ov.remove();
+// ═══ WOOLWORTHS FLOW ═══
+async function startWW(){
+  const uc=S.list.filter(i=>!i.checked);if(!uc.length)return;
+  const ov=document.createElement('div');ov.className='wov';
+  ov.innerHTML=`<div class="wfl"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><div><div style="font-size:12px;font-weight:700;color:var(--ww);text-transform:uppercase;letter-spacing:.08em">Woolworths</div><div style="font-size:13px;color:var(--muted)">Finding products...</div></div><button class="xb" id="wx">✕</button></div><div style="text-align:center;padding:40px"><div class="spin spd" style="width:32px;height:32px"></div><p style="margin-top:16px;color:var(--muted)">Searching for ${uc.length} items...</p></div></div>`;
+  document.body.appendChild(ov);$('#wx',ov).onclick=()=>ov.remove();
 
   try{
-    const ingredients = unchecked.map(i=>({name:i.name, searchTerm:toSearch(i.name), amount:i.amount, unit:i.unit}));
-    const resp = await fetch('/api/woolworths/batch-search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ingredients})});
+    const ings=uc.map(i=>({name:i.name,searchTerm:toSearch(i.name),amount:i.amount,unit:i.unit}));
+    const resp=await fetch('/api/woolworths/batch-search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ingredients:ings})});
+    if(!resp.ok)throw new Error('Server error '+resp.status);
+    const data=await resp.json();
 
-    if(!resp.ok) throw new Error('Search failed');
-    const {results} = await resp.json();
-    showProductSelection(ov, results, unchecked);
+    if(data.blocked || !data.results?.length){
+      // ── IMMEDIATE FALLBACK: show search links ──
+      showFallbackLinks(ov, uc, data.message || 'Woolworths product search is currently unavailable.');
+      return;
+    }
+
+    const hasAnyMatch = data.results.some(r=>r.matches.length>0);
+    if(!hasAnyMatch){
+      showFallbackLinks(ov, uc, 'No products found. Woolworths may be blocking automated searches. Use the links below to search manually.');
+      return;
+    }
+
+    showProductSel(ov, data.results, uc);
   }catch(err){
     console.error(err);
-    $('.ww-fl',ov).innerHTML=`<div style="text-align:center;padding:40px">
-      <p style="color:#c53030;margin-bottom:16px">Failed to search Woolworths. ${err.message}</p>
-      <button class="btn btn-p" id="rtr">Retry</button> <button class="btn btn-s" id="cls" style="margin-left:8px">Close</button></div>`;
-    $('#rtr',ov).onclick=()=>{ov.remove();startWoolworths();};
-    $('#cls',ov).onclick=()=>ov.remove();
+    showFallbackLinks(ov, uc, 'Could not connect to Woolworths: '+err.message);
   }
 }
 
-function showProductSelection(ov, results, unchecked){
-  const selected = results.map(r=>r.matches.length>0?{...r.matches[0],quantity:1}:null);
-
-  function renderSel(){
-    const total = selected.reduce((s,p)=>s+(p?.price||0),0);
-    const matched = selected.filter(Boolean).length;
-    const isLoggedIn = S.wwAuth?.loggedIn;
-
-    let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-      <div><div style="font-size:12px;font-weight:700;color:var(--ww);text-transform:uppercase;letter-spacing:.08em">Review Products</div>
-      <div style="font-size:13px;color:var(--muted)">${matched} of ${results.length} matched</div></div>
-      <button class="xb" id="wwx2">✕</button></div>
-      <div class="ww-sum">
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:14px"><span>Items matched</span><span>${matched} / ${results.length}</span></div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0 0;margin-top:8px;border-top:2px solid var(--border);font-weight:700;font-size:16px"><span>Estimated total</span><span>$${total.toFixed(2)}</span></div>
-      </div>`;
-
-    // Product list
-    results.forEach((result,idx)=>{
-      html += `<div style="font-size:13px;font-weight:600;margin:16px 0 8px;display:flex;justify-content:space-between">
-        <span>${h(unchecked[idx]?.name||result.ingredient)}</span>
-        <span style="font-size:12px;color:var(--muted)">${h(unchecked[idx]?.amount||'')}${unchecked[idx]?.unit?' '+h(unchecked[idx].unit):''}</span></div>`;
-
-      if(!result.matches.length){
-        html += `<div style="font-size:13px;color:var(--muted);padding:8px;background:var(--tag-bg);border-radius:8px">No products found for "${h(result.searchTerm)}"</div>`;
-      } else {
-        result.matches.forEach((p,pi)=>{
-          const isSel = selected[idx]?.stockcode===p.stockcode;
-          html += `<div class="pc ${isSel?'sel':''}" data-sidx="${idx}" data-pidx="${pi}">
-            <img class="pi" src="${p.image||''}" alt="" onerror="this.style.display='none'">
-            <div style="flex:1;min-width:0"><div class="pn">${h(p.name)}</div><div style="font-size:12px;color:var(--muted)">${h(p.packageSize)} ${p.cupString?'· '+h(p.cupString):''}</div>
-            ${p.isOnSpecial?'<div style="font-size:11px;color:var(--accent);font-weight:600">ON SPECIAL</div>':''}</div>
-            <div style="text-align:right;flex-shrink:0"><div class="pp">$${p.price?.toFixed(2)||'?'}</div>
-            ${p.wasPrice&&p.wasPrice>p.price?`<div style="font-size:11px;color:var(--muted);text-decoration:line-through">$${p.wasPrice.toFixed(2)}</div>`:''}</div>
-          </div>`;
-        });
-      }
-    });
-
-    // Action buttons
-    if(isLoggedIn){
-      html += `<button class="btn-ww" id="cartBtn" ${!matched?'disabled':''} style="margin-top:16px">🛒 Add ${matched} items to cart</button>
-        <p style="font-size:12px;color:var(--muted);text-align:center;margin-top:8px">Adding directly to your Woolworths cart (${h(S.wwAuth.email)})</p>`;
-    } else {
-      html += `<div class="login-box" style="margin-top:16px">
-        <h3>Log in to Woolworths</h3>
-        <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Log in to add items directly to your cart. Your credentials are sent securely to Woolworths — we don't store your password.</p>
-        <div class="fg"><label class="fl">Email</label><input class="fi" id="wwe" type="email" placeholder="your@email.com"></div>
-        <div class="fg"><label class="fl">Password</label><input class="fi" id="wwp" type="password" placeholder="Password"></div>
-        <div id="wwlerr" style="font-size:13px;color:#c53030;margin-bottom:8px;display:none"></div>
-        <button class="btn btn-p" style="width:100%;background:var(--ww)" id="wwlbtn">Log in & Add to Cart</button>
-      </div>
-      <div style="text-align:center;margin:12px 0"><span style="font-size:13px;color:var(--muted)">— or —</span></div>
-      <button class="btn btn-o" style="width:100%" id="linksBtn" ${!matched?'disabled':''}>Open product pages instead</button>
-      <p style="font-size:12px;color:var(--muted);text-align:center;margin-top:8px">Opens each product on woolworths.com.au so you can add to cart yourself</p>`;
-    }
-
-    $('.ww-fl',ov).innerHTML=html;
-    $('#wwx2',ov).onclick=()=>ov.remove();
-
-    // Bind product selection
-    $$('.pc',ov).forEach(card=>{
-      card.onclick=()=>{
-        const sidx=+card.dataset.sidx, pidx=+card.dataset.pidx;
-        selected[sidx]={...results[sidx].matches[pidx],quantity:1};
-        renderSel();
-      };
-    });
-
-    // Bind cart button (logged in)
-    if(isLoggedIn && $('#cartBtn',ov)){
-      $('#cartBtn',ov).onclick=async()=>{
-        const items=selected.filter(Boolean);
-        if(!items.length)return;
-        const btn=$('#cartBtn',ov);
-        btn.disabled=true; btn.innerHTML='<span class="spin"></span> Adding...';
-
-        try{
-          const resp = await fetch('/api/woolworths/add-to-cart',{
-            method:'POST',headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({items:items.map(p=>({stockcode:p.stockcode,quantity:p.quantity||1}))})
-          });
-          const data=await resp.json();
-
-          if(data.requiresLogin){
-            S.wwAuth={loggedIn:false};
-            toast('Session expired — please log in again');
-            renderSel();
-            return;
-          }
-
-          if(data.success){
-            unchecked.forEach(item=>{
-              const idx=S.list.findIndex(i=>i.name===item.name&&!i.checked);
-              if(idx!==-1)S.list[idx].checked=true;
-            });
-            save(); ov.remove(); R();
-            toast(`${data.addedCount} items added to Woolworths cart!`);
-          } else {
-            btn.disabled=false; btn.textContent='🛒 Retry';
-            toast('Some items failed to add');
-          }
-        }catch(e){
-          btn.disabled=false; btn.textContent='🛒 Retry';
-        }
-      };
-    }
-
-    // Bind login button
-    if($('#wwlbtn',ov)){
-      $('#wwlbtn',ov).onclick=async()=>{
-        const email=$('#wwe',ov).value.trim();
-        const pw=$('#wwp',ov).value;
-        if(!email||!pw)return;
-        const btn=$('#wwlbtn',ov);
-        const err=$('#wwlerr',ov);
-        btn.disabled=true; btn.innerHTML='<span class="spin"></span> Logging in...';
-        err.style.display='none';
-
-        try{
-          const resp=await fetch('/api/woolworths/login',{
-            method:'POST',headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({email,password:pw})
-          });
-          const data=await resp.json();
-          if(data.success){
-            S.wwAuth={loggedIn:true,email:data.email};
-            toast('Logged in!');
-            renderSel(); // Re-render with cart button
-          } else {
-            err.textContent=data.error||'Login failed';
-            err.style.display='block';
-            btn.disabled=false; btn.textContent='Log in & Add to Cart';
-          }
-        }catch(e){
-          err.textContent='Network error';
-          err.style.display='block';
-          btn.disabled=false; btn.textContent='Log in & Add to Cart';
-        }
-      };
-    }
-
-    // Bind fallback links button
-    if($('#linksBtn',ov)){
-      $('#linksBtn',ov).onclick=()=>{
-        const items=selected.filter(Boolean);
-        if(!items.length)return;
-        // Show list of product links
-        let linksHtml=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-          <div><div style="font-size:12px;font-weight:700;color:var(--ww);text-transform:uppercase;letter-spacing:.08em">Product Links</div>
-          <div style="font-size:13px;color:var(--muted)">${items.length} products</div></div>
-          <button class="xb" id="wwx3">✕</button></div>
-          <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Tap each link to open on woolworths.com.au and add to your cart.</p>`;
-
-        items.forEach((p,i)=>{
-          linksHtml += `<a class="link-item" href="${p.productUrl||'https://www.woolworths.com.au/shop/productdetails/'+p.stockcode}" target="_blank" rel="noopener">
-            <span>${h(p.name)}</span><span style="font-weight:600;color:var(--ww);flex-shrink:0">$${p.price?.toFixed(2)||'?'}</span><span class="link-arrow">↗</span></a>`;
-        });
-
-        linksHtml += `<button class="btn btn-s" style="width:100%;margin-top:16px" id="backBtn">← Back to selection</button>`;
-        $('.ww-fl',ov).innerHTML=linksHtml;
-        $('#wwx3',ov).onclick=()=>ov.remove();
-        $('#backBtn',ov).onclick=()=>renderSel();
-      };
-    }
-  }
-  renderSel();
+function showFallbackLinks(ov, unchecked, message){
+  let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><div><div style="font-size:12px;font-weight:700;color:var(--ww);text-transform:uppercase;letter-spacing:.08em">Woolworths</div></div><button class="xb" id="wx2">✕</button></div>`;
+  html+=`<div class="warn" style="margin-bottom:16px">${h(message)}</div>`;
+  html+=`<p style="font-size:14px;font-weight:600;margin-bottom:12px">Search each item on Woolworths:</p>`;
+  unchecked.forEach(item=>{
+    const q=encodeURIComponent(toSearch(item.name));
+    html+=`<a class="lnk" href="https://www.woolworths.com.au/shop/search/products?searchTerm=${q}" target="_blank" rel="noopener"><span>${h(item.name)}</span>${item.amount?`<span style="font-size:12px;color:var(--muted);flex-shrink:0">${h(item.amount)}${item.unit?' '+h(item.unit):''}</span>`:''}<span style="color:var(--ww);flex-shrink:0">↗</span></a>`;
+  });
+  html+=`<button class="btn bs" style="width:100%;margin-top:16px" id="clsf">Close</button>`;
+  $('.wfl',ov).innerHTML=html;
+  $('#wx2',ov).onclick=()=>ov.remove();
+  $('#clsf',ov).onclick=()=>ov.remove();
 }
 
-// ═══ BOOT ═══
+function showProductSel(ov, results, unchecked){
+  const sel=results.map(r=>r.matches.length>0?{...r.matches[0],quantity:1}:null);
+
+  function render(){
+    const total=sel.reduce((s,p)=>s+(p?.price||0),0);
+    const matched=sel.filter(Boolean).length;
+    const loggedIn=S.wwAuth?.loggedIn;
+    let o=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><div><div style="font-size:12px;font-weight:700;color:var(--ww);text-transform:uppercase;letter-spacing:.08em">Review Products</div><div style="font-size:13px;color:var(--muted)">${matched}/${results.length} matched</div></div><button class="xb" id="wx3">✕</button></div>`;
+    o+=`<div class="wsu"><div style="display:flex;justify-content:space-between;padding:4px 0;font-size:14px"><span>Matched</span><span>${matched}/${results.length}</span></div><div style="display:flex;justify-content:space-between;padding:8px 0 0;margin-top:8px;border-top:2px solid var(--border);font-weight:700;font-size:16px"><span>Est. total</span><span>$${total.toFixed(2)}</span></div></div>`;
+
+    results.forEach((r,idx)=>{
+      o+=`<div style="font-size:13px;font-weight:600;margin:16px 0 8px;display:flex;justify-content:space-between"><span>${h(unchecked[idx]?.name||r.ingredient)}</span><span style="font-size:12px;color:var(--muted)">${h(unchecked[idx]?.amount||'')}${unchecked[idx]?.unit?' '+h(unchecked[idx].unit):''}</span></div>`;
+      if(!r.matches.length){o+=`<div style="font-size:13px;color:var(--muted);padding:8px;background:var(--tag);border-radius:8px">No match — <a href="https://www.woolworths.com.au/shop/search/products?searchTerm=${encodeURIComponent(r.searchTerm)}" target="_blank" style="color:var(--ww)">search manually ↗</a></div>`;}
+      else r.matches.forEach((p,pi)=>{
+        const is=sel[idx]?.stockcode===p.stockcode;
+        o+=`<div class="pc ${is?'sel':''}" data-si="${idx}" data-pi="${pi}"><img class="pi" src="${p.image||''}" alt="" onerror="this.style.display='none'"><div style="flex:1;min-width:0"><div class="pn">${h(p.name)}</div><div style="font-size:12px;color:var(--muted)">${h(p.packageSize)} ${p.cupString?'· '+h(p.cupString):''}</div>${p.isOnSpecial?'<div style="font-size:11px;color:var(--accent);font-weight:600">SPECIAL</div>':''}</div><div style="text-align:right;flex-shrink:0"><div class="pp">$${p.price?.toFixed(2)||'?'}</div>${p.wasPrice&&p.wasPrice>p.price?`<div style="font-size:11px;color:var(--muted);text-decoration:line-through">$${p.wasPrice.toFixed(2)}</div>`:''}</div></div>`;
+      });
+    });
+
+    if(loggedIn){
+      o+=`<button class="bw" id="cb" ${!matched?'disabled':''} style="margin-top:16px">🛒 Add ${matched} to cart</button><p style="font-size:12px;color:var(--muted);text-align:center;margin-top:8px">Adding to Woolworths cart (${h(S.wwAuth.email)})</p>`;
+    }else{
+      o+=`<div style="background:var(--card);border:2px solid var(--ww);border-radius:var(--r);padding:20px;margin-top:16px"><h3 style="font-family:var(--fd);font-size:18px;font-weight:600;color:var(--ww);margin-bottom:12px">Log in to Woolworths</h3><p style="font-size:13px;color:var(--muted);margin-bottom:12px">Log in to add items directly to your cart. We don't store your password.</p><div class="fg"><label class="fl">Email</label><input class="fi" id="we" type="email"></div><div class="fg"><label class="fl">Password</label><input class="fi" id="wp" type="password"></div><div id="wle" style="font-size:13px;color:#c53030;margin-bottom:8px;display:none"></div><button class="btn bp" style="width:100%;background:var(--ww)" id="wlb">Log in & Add to Cart</button></div>`;
+      o+=`<div style="text-align:center;margin:12px 0"><span style="font-size:13px;color:var(--muted)">— or —</span></div>`;
+      o+=`<button class="btn bo" style="width:100%" id="flb" ${!matched?'disabled':''}>Open product pages instead</button><p style="font-size:12px;color:var(--muted);text-align:center;margin-top:8px">Opens each on woolworths.com.au</p>`;
+    }
+
+    $('.wfl',ov).innerHTML=o;
+    $('#wx3',ov).onclick=()=>ov.remove();
+    $$('.pc',ov).forEach(c=>{c.onclick=()=>{sel[+c.dataset.si]={...results[+c.dataset.si].matches[+c.dataset.pi],quantity:1};render();};});
+
+    // Cart button
+    if($('#cb',ov)){$('#cb',ov).onclick=async()=>{
+      const items=sel.filter(Boolean);if(!items.length)return;
+      const btn=$('#cb',ov);btn.disabled=true;btn.innerHTML='<span class="spin"></span> Adding...';
+      try{
+        const r=await fetch('/api/woolworths/add-to-cart',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:items.map(p=>({stockcode:p.stockcode,quantity:p.quantity||1}))})});
+        const d=await r.json();
+        if(d.requiresLogin){S.wwAuth={loggedIn:false};toast('Session expired');render();return;}
+        if(d.success){unchecked.forEach(it=>{const idx=S.list.findIndex(i=>i.name===it.name&&!i.checked);if(idx!==-1)S.list[idx].checked=true;});save();ov.remove();R();toast(`${d.addedCount} items added to cart!`);}
+        else{btn.disabled=false;btn.textContent='🛒 Retry';}
+      }catch(e){btn.disabled=false;btn.textContent='🛒 Retry';}
+    };}
+
+    // Login button
+    if($('#wlb',ov)){$('#wlb',ov).onclick=async()=>{
+      const em=$('#we',ov).value.trim(),pw=$('#wp',ov).value;if(!em||!pw)return;
+      const btn=$('#wlb',ov),err=$('#wle',ov);btn.disabled=true;btn.innerHTML='<span class="spin"></span> Logging in...';err.style.display='none';
+      try{const r=await fetch('/api/woolworths/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em,password:pw})});const d=await r.json();
+        if(d.success){S.wwAuth={loggedIn:true,email:d.email};toast('Logged in!');render();}
+        else{err.textContent=d.error||'Login failed';err.style.display='block';btn.disabled=false;btn.textContent='Log in & Add to Cart';}
+      }catch(e){err.textContent='Network error';err.style.display='block';btn.disabled=false;btn.textContent='Log in & Add to Cart';}
+    };}
+
+    // Fallback links button
+    if($('#flb',ov)){$('#flb',ov).onclick=()=>{
+      const items=sel.filter(Boolean);
+      let lh=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><div><div style="font-size:12px;font-weight:700;color:var(--ww);text-transform:uppercase;letter-spacing:.08em">Product Links</div></div><button class="xb" id="wx4">✕</button></div><p style="font-size:13px;color:var(--muted);margin-bottom:16px">Tap each to open on woolworths.com.au:</p>`;
+      items.forEach(p=>{lh+=`<a class="lnk" href="${p.productUrl||'https://www.woolworths.com.au/shop/productdetails/'+p.stockcode}" target="_blank"><span>${h(p.name)}</span><span style="font-weight:600;color:var(--ww);flex-shrink:0">$${p.price?.toFixed(2)||'?'}</span><span style="color:var(--ww);flex-shrink:0">↗</span></a>`;});
+      lh+=`<button class="btn bs" style="width:100%;margin-top:16px" id="bk">← Back</button>`;
+      $('.wfl',ov).innerHTML=lh;$('#wx4',ov).onclick=()=>ov.remove();$('#bk',ov).onclick=()=>render();
+    };}
+  }
+  render();
+}
+
 R();
 </script>
 </body>
