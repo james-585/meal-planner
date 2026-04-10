@@ -1,13 +1,102 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="manifest" href="public/manifest.json">
-    <title>Meal Planner</title>
+    <title>Meal Planner Application</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js" defer></script>
 </head>
 <body>
-    <h1>Welcome to the Meal Planner</h1>
-    <script src="script.js"></script>
+    <header>
+        <h1>Meal Planner</h1>
+        <nav>
+            <ul>
+                <li><a href="#recipes">Recipes</a></li>
+                <li><a href="#planner">Planner</a></li>
+                <li><a href="#shopping">Shopping List</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section id="recipes">
+            <h2>Recipes</h2>
+            <div id="recipe-list">
+                <!-- Recipe items will be displayed here -->
+            </div>
+        </section>
+
+        <section id="planner">
+            <h2>Weekly Meal Planner</h2>
+            <div id="meal-planner">
+                <!-- Planner UI will be here -->
+            </div>
+        </section>
+
+        <section id="shopping">
+            <h2>Shopping List</h2>
+            <div id="shopping-list">
+                <!-- Shopping list items will be displayed here -->
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Meal Planner App</p>
+    </footer>
 </body>
 </html>
+
+/* CSS Styles */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    background: #4CAF50;
+    color: #ffffff;
+    padding: 1rem;
+    text-align: center;
+}
+
+nav ul {
+    list-style: none;
+    padding: 0;
+}
+
+nav ul li {
+    display: inline;
+    margin: 0 10px;
+}
+
+section {
+    padding: 20px;
+}
+
+/* JavaScript Code */
+document.addEventListener('DOMContentLoaded', () => {
+    // Functionality for loading recipes, managing planner and generating shopping list
+    loadRecipes();
+    setupPlanner();
+    generateShoppingList();
+});
+
+function loadRecipes() {
+    // Code to fetch and display recipes
+}
+
+function setupPlanner() {
+    // Code to set up meal planner functionality
+}
+
+function generateShoppingList() {
+    // Code to generate the shopping list
+}
+
+/* Woolworths product matching logic integration */
+function matchWoolworthsProducts() {
+    // Logic to match ingredients with Woolworths product API
+}
