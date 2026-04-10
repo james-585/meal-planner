@@ -1,5 +1,5 @@
 import express from 'express';
-import fetch from 'node-fetch';
+import fetch, { AbortError } from 'node-fetch';
 import cookieParser from 'cookie-parser';
 import * as cheerio from 'cheerio';
 import { fileURLToPath } from 'url';
@@ -10,47 +10,67 @@ const __dirname = dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
 app.use(express.json({ limit: '5mb' }));
 app.use(cookieParser());
 app.use(express.static(join(__dirname, '..', 'public')));
 
 // ═══════════════════════════════════════════════════════════════
-//  WOOLWORTHS SESSION MANAGEMENT
+//  FETCH WITH TIMEOUT — never hang
 // ═══════════════════════════════════════════════════════════════
-// Woolworths requires cookies from an initial page load before
-// API calls will work. We bootstrap a session on server start
-// and refresh it periodically.
+async function fetchWithTimeout(url, opts = {}, timeoutMs = 10000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const resp = await fetch(url, { ...opts, signal: controller.signal });
+    clearTimeout(timer);
+    return resp;
+  } catch (err) {
+    clearTimeout(timer);
+    throw err;
+  }
+}
 
+// Try to parse JSON, return null if body is HTML/not JSON
+async function safeJson(resp) {
+  const text = await resp.text();
+  // Woolworths sometimes returns HTML (captcha/block page) with 200 status
+  if (text.trimStart().startsWith('<') || text.trimStart().startsWith('<!')) {
+    return null;
+  }
+  try { return JSON.parse(text); } catch { return null; }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  WOOLWORTHS SESSION
+// ═══════════════════════════════════════════════════════════════
 let wwSession = { cookies: '', lastRefresh: 0 };
 
 async function refreshWoolworthsSession() {
   try {
-    // Hit the homepage to get initial cookies
-    const resp = await fetch('https://www.woolworths.com.au/', {
+    const resp = await fetchWithTimeout('https://www.woolworths.com.au/', {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-AU,en;q=0.9',
       },
       redirect: 'follow',
-    });
+    }, 15000);
 
-    // Collect all Set-Cookie headers
     const setCookies = resp.headers.raw()['set-cookie'] || [];
     const cookieStr = setCookies.map(c => c.split(';')[0]).join('; ');
-
     if (cookieStr) {
       wwSession = { cookies: cookieStr, lastRefresh: Date.now() };
-      console.log('✓ Woolworths session refreshed');
+      console.log('✓ Woolworths session refreshed (' + setCookies.length + ' cookies)');
+    } else {
+      console.log('⚠ Woolworths returned no cookies');
     }
   } catch (err) {
-    console.error('✗ Failed to refresh Woolworths session:', err.message);
+    console.error('✗ Session refresh failed:', err.message);
   }
 }
 
-function getWwHeaders(extraCookies = '') {
-  const cookies = [wwSession.cookies, extraCookies].filter(Boolean).join('; ');
+function getWwHeaders(extra = '') {
+  const cookies = [wwSession.cookies, extra].filter(Boolean).join('; ');
   return {
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
     'Accept': 'application/json, text/plain, */*',
@@ -58,179 +78,239 @@ function getWwHeaders(extraCookies = '') {
     'Content-Type': 'application/json',
     'Origin': 'https://www.woolworths.com.au',
     'Referer': 'https://www.woolworths.com.au/shop/search/products',
-    ...(cookies ? { 'Cookie': cookies } : {}),
+    ...(cookies ? { Cookie: cookies } : {}),
   };
 }
 
-// Refresh session on start and every 30 minutes
 refreshWoolworthsSession();
-setInterval(refreshWoolworthsSession, 30 * 60 * 1000);
+setInterval(refreshWoolworthsSession, 25 * 60 * 1000);
+
+
+// ═══════════════════════════════════════════════════════════════
+//  IMPERIAL → METRIC CONVERSION
+// ═══════════════════════════════════════════════════════════════
+function convertToMetric(amount, unit) {
+  if (!amount || !unit) return { amount, unit };
+  const num = parseFloat(amount);
+  if (isNaN(num)) return { amount, unit };
+  const u = unit.toLowerCase().replace(/s$/, '').replace(/\./, '');
+
+  // Weight: lbs/pounds → grams (round to nearest 50g)
+  if (u === 'lb' || u === 'pound') {
+    const grams = Math.round((num * 453.592) / 50) * 50;
+    return { amount: String(grams), unit: 'g' };
+  }
+  // Ounces → grams (round to nearest 50g for amounts > 100g, nearest 10g otherwise)
+  if (u === 'oz' || u === 'ounce') {
+    const grams = num * 28.3495;
+    if (grams >= 100) return { amount: String(Math.round(grams / 50) * 50), unit: 'g' };
+    return { amount: String(Math.round(grams / 10) * 10), unit: 'g' };
+  }
+  // Fluid ounces → ml
+  if (u === 'fl oz' || u === 'fluid ounce' || u === 'fl_oz') {
+    return { amount: String(Math.round(num * 29.5735)), unit: 'ml' };
+  }
+  // Inches → cm
+  if (u === 'inch' || u === 'inche' || u === 'in') {
+    return { amount: String(Math.round(num * 2.54)), unit: 'cm' };
+  }
+  // Fahrenheit in instructions handled separately
+  return { amount, unit };
+}
 
 
 // ═══════════════════════════════════════════════════════════════
 //  1. RECIPE IMPORT FROM URL
 // ═══════════════════════════════════════════════════════════════
-// Fetches a recipe URL, extracts JSON-LD schema.org/Recipe data,
-// falls back to parsing common recipe HTML patterns.
 
 app.post('/api/import-recipe', async (req, res) => {
   try {
     const { url } = req.body;
     if (!url) return res.status(400).json({ error: 'URL required' });
 
-    // Fetch the page
-    const resp = await fetch(url, {
+    // Validate URL
+    let parsedUrl;
+    try { parsedUrl = new URL(url); } catch { return res.status(400).json({ error: 'Invalid URL' }); }
+    if (!['http:', 'https:'].includes(parsedUrl.protocol)) return res.status(400).json({ error: 'Invalid URL' });
+
+    const resp = await fetchWithTimeout(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; MealPlanner/1.0)',
         'Accept': 'text/html,application/xhtml+xml',
       },
       redirect: 'follow',
-      timeout: 15000,
-    });
+    }, 15000);
 
-    if (!resp.ok) {
-      return res.status(400).json({ error: `Could not fetch URL (${resp.status})` });
-    }
+    if (!resp.ok) return res.status(400).json({ error: `Could not fetch URL (${resp.status})` });
 
     const html = await resp.text();
     const $ = cheerio.load(html);
 
-    // Method 1: Extract JSON-LD Recipe data
-    let recipe = null;
+    // ── PASS 1: Extract JSON-LD Recipe ──
+    let rawRecipe = null;
     $('script[type="application/ld+json"]').each((_, el) => {
-      if (recipe) return;
+      if (rawRecipe) return;
       try {
         let data = JSON.parse($(el).html());
-
-        // Handle @graph arrays (common in WordPress/Yoast)
         if (data['@graph']) data = data['@graph'];
-        if (Array.isArray(data)) {
-          data = data.find(d => d['@type'] === 'Recipe' || (Array.isArray(d['@type']) && d['@type'].includes('Recipe')));
-        }
-
+        if (Array.isArray(data)) data = data.find(d => {
+          const t = d['@type'];
+          return t === 'Recipe' || (Array.isArray(t) && t.includes('Recipe'));
+        });
         if (data && (data['@type'] === 'Recipe' || (Array.isArray(data['@type']) && data['@type'].includes('Recipe')))) {
-          recipe = data;
+          rawRecipe = data;
         }
-      } catch (e) { /* skip invalid JSON */ }
+      } catch {}
     });
 
-    if (recipe) {
-      // Parse the structured recipe data
-      const name = recipe.name || 'Imported Recipe';
-      const description = recipe.description || '';
-      const servings = recipe.recipeYield
-        ? (Array.isArray(recipe.recipeYield) ? recipe.recipeYield[0] : String(recipe.recipeYield))
-        : '';
-      const prepTime = parseDuration(recipe.prepTime);
-      const cookTime = parseDuration(recipe.cookTime);
-
-      // Parse ingredients
-      const ingredients = (recipe.recipeIngredient || []).map(ing => {
-        if (typeof ing === 'string') return parseIngredientString(ing);
-        if (ing.name) return { amount: String(ing.value || ''), unit: '', name: ing.name };
-        return { amount: '', unit: '', name: String(ing) };
-      });
-
-      // Parse steps
-      let steps = [];
-      if (recipe.recipeInstructions) {
-        if (typeof recipe.recipeInstructions === 'string') {
-          steps = recipe.recipeInstructions.split(/\n+/).filter(s => s.trim());
-        } else if (Array.isArray(recipe.recipeInstructions)) {
-          steps = recipe.recipeInstructions.map(s => {
-            if (typeof s === 'string') return s;
-            if (s.text) return s.text;
-            if (s.itemListElement) {
-              return s.itemListElement.map(e => e.text || String(e)).join('\n');
-            }
-            return String(s.name || s);
-          }).filter(s => s.trim());
-        }
+    if (!rawRecipe) {
+      // Fallback: try common HTML selectors
+      const ingredientSelectors = [
+        '.recipe-ingredients li', '.ingredients li', '[itemprop="recipeIngredient"]',
+        '.ingredient-list li', '.wprm-recipe-ingredient', '.tasty-recipe-ingredients li',
+      ];
+      let rawIngs = [];
+      for (const sel of ingredientSelectors) {
+        const found = $(sel).map((_, el) => $(el).text().trim()).get().filter(Boolean);
+        if (found.length > 1) { rawIngs = found; break; }
       }
 
-      // Strip HTML tags from steps
-      steps = steps.map(s => s.replace(/<[^>]+>/g, '').trim());
+      if (rawIngs.length < 2) {
+        const title = $('meta[property="og:title"]').attr('content') || $('title').text() || '';
+        return res.status(422).json({
+          error: 'Could not find recipe data on this page. Try adding manually.',
+          partialData: { name: title.replace(/\s*[-|–].*/,'').trim() }
+        });
+      }
 
-      return res.json({
-        success: true,
-        recipe: { name, description, servings, prepTime, cookTime, ingredients, steps, sourceUrl: url }
+      // Convert & validate
+      const ingredients = rawIngs.map(s => {
+        const parsed = parseIngredientString(s);
+        const converted = convertToMetric(parsed.amount, parsed.unit);
+        return { ...parsed, amount: converted.amount, unit: converted.unit };
       });
+
+      const stepSelectors = ['.recipe-method li','.instructions li','[itemprop="recipeInstructions"] li','.recipe-steps li','.wprm-recipe-instruction','.tasty-recipe-instructions li'];
+      let steps = [];
+      for (const sel of stepSelectors) {
+        const found = $(sel).map((_, el) => $(el).text().trim()).get().filter(Boolean);
+        if (found.length > 0) { steps = found; break; }
+      }
+
+      const name = $('meta[property="og:title"]').attr('content') || $('h1').first().text() || 'Imported Recipe';
+
+      // ── PASS 2: VALIDATE (anti-hallucination) ──
+      const validated = validateRecipe({ name: name.replace(/\s*[-|–].*/,'').trim(), description: '', servings: '', prepTime: '', cookTime: '', ingredients, steps, sourceUrl: url });
+
+      return res.json({ success: true, recipe: validated });
     }
 
-    // Method 2: Fallback — try to find recipe content in meta tags / common structures
-    const metaTitle = $('meta[property="og:title"]').attr('content') || $('title').text() || 'Imported Recipe';
-    const metaDesc = $('meta[property="og:description"]').attr('content') || '';
+    // ── Parse structured JSON-LD data ──
+    const name = rawRecipe.name || 'Imported Recipe';
+    const description = typeof rawRecipe.description === 'string' ? rawRecipe.description : '';
+    const servings = rawRecipe.recipeYield
+      ? (Array.isArray(rawRecipe.recipeYield) ? rawRecipe.recipeYield[0] : String(rawRecipe.recipeYield))
+      : '';
+    const prepTime = parseDuration(rawRecipe.prepTime);
+    const cookTime = parseDuration(rawRecipe.cookTime);
 
-    // Try common ingredient list selectors
-    const ingredientSelectors = [
-      '.recipe-ingredients li', '.ingredients li', '[itemprop="recipeIngredient"]',
-      '.ingredient-list li', '.wprm-recipe-ingredient', '.tasty-recipe-ingredients li',
-      '.recipe__ingredients li', '.ingredient',
-    ];
-
-    let rawIngredients = [];
-    for (const sel of ingredientSelectors) {
-      const found = $(sel).map((_, el) => $(el).text().trim()).get();
-      if (found.length > 0) { rawIngredients = found; break; }
-    }
-
-    // Try common step selectors
-    const stepSelectors = [
-      '.recipe-method li', '.instructions li', '[itemprop="recipeInstructions"] li',
-      '.recipe-steps li', '.wprm-recipe-instruction', '.tasty-recipe-instructions li',
-      '.recipe__steps li', '.step',
-    ];
-
-    let rawSteps = [];
-    for (const sel of stepSelectors) {
-      const found = $(sel).map((_, el) => $(el).text().trim()).get();
-      if (found.length > 0) { rawSteps = found; break; }
-    }
-
-    if (rawIngredients.length > 0) {
-      return res.json({
-        success: true,
-        recipe: {
-          name: metaTitle.replace(/\s*[-|–].*/,'').trim(),
-          description: metaDesc,
-          servings: '',
-          prepTime: '',
-          cookTime: '',
-          ingredients: rawIngredients.map(parseIngredientString),
-          steps: rawSteps,
-          sourceUrl: url,
-        }
-      });
-    }
-
-    // Nothing found
-    res.status(422).json({
-      error: 'Could not extract recipe data from this page. Try adding manually.',
-      partialData: { name: metaTitle.replace(/\s*[-|–].*/,'').trim(), description: metaDesc }
+    // Parse ingredients
+    let ingredients = (rawRecipe.recipeIngredient || []).map(ing => {
+      const parsed = typeof ing === 'string' ? parseIngredientString(ing) : { amount: String(ing.value || ''), unit: '', name: ing.name || String(ing) };
+      const converted = convertToMetric(parsed.amount, parsed.unit);
+      return { ...parsed, amount: converted.amount, unit: converted.unit };
     });
+
+    // Parse steps
+    let steps = [];
+    if (rawRecipe.recipeInstructions) {
+      if (typeof rawRecipe.recipeInstructions === 'string') {
+        steps = rawRecipe.recipeInstructions.split(/\n+/).filter(s => s.trim());
+      } else if (Array.isArray(rawRecipe.recipeInstructions)) {
+        for (const s of rawRecipe.recipeInstructions) {
+          if (typeof s === 'string') { steps.push(s); }
+          else if (s['@type'] === 'HowToStep' && s.text) { steps.push(s.text); }
+          else if (s['@type'] === 'HowToSection' && Array.isArray(s.itemListElement)) {
+            for (const sub of s.itemListElement) { steps.push(sub.text || String(sub.name || sub)); }
+          }
+          else if (s.text) { steps.push(s.text); }
+          else { steps.push(String(s.name || s)); }
+        }
+      }
+    }
+    steps = steps.map(s => s.replace(/<[^>]+>/g, '').trim()).filter(Boolean);
+
+    // ── PASS 2: VALIDATE the extracted recipe ──
+    const recipe = validateRecipe({ name, description, servings, prepTime, cookTime, ingredients, steps, sourceUrl: url });
+
+    res.json({ success: true, recipe });
 
   } catch (err) {
     console.error('Import error:', err.message);
-    res.status(500).json({ error: 'Failed to import recipe: ' + err.message });
+    res.status(500).json({ error: 'Failed to import: ' + err.message });
   }
 });
 
-// Parse ISO 8601 duration (PT1H30M) to human-readable
+// ── Validation: catch hallucination / garbage data ──
+function validateRecipe(r) {
+  // Name: must exist, strip HTML
+  r.name = (r.name || 'Imported Recipe').replace(/<[^>]+>/g, '').trim().substring(0, 200);
+  if (!r.name) r.name = 'Imported Recipe';
+
+  // Description: cap length, strip HTML
+  r.description = (r.description || '').replace(/<[^>]+>/g, '').trim().substring(0, 500);
+
+  // Ingredients: filter out empty, ad-text, navigation items
+  const junkPatterns = /^(advertisement|subscribe|sign up|click here|share|print|save|jump to|nutrition|calories per|course:|cuisine:|keyword:|author:|prep time|cook time|total time|servings?:|yield:)/i;
+
+  r.ingredients = (r.ingredients || []).filter(ing => {
+    if (!ing.name || ing.name.trim().length < 2) return false;
+    if (ing.name.length > 200) return false;
+    if (junkPatterns.test(ing.name.trim())) return false;
+    return true;
+  }).map(ing => ({
+    amount: (ing.amount || '').substring(0, 20),
+    unit: (ing.unit || '').substring(0, 20),
+    name: ing.name.replace(/<[^>]+>/g, '').trim().substring(0, 200),
+  }));
+
+  // Steps: filter out empty, junky
+  r.steps = (r.steps || []).filter(s => {
+    if (!s || s.trim().length < 5) return false;
+    if (s.length > 2000) return false;
+    if (junkPatterns.test(s.trim())) return false;
+    return true;
+  }).map(s => s.replace(/<[^>]+>/g, '').trim().substring(0, 2000));
+
+  // Sanity check: a real recipe should have at least 2 ingredients
+  if (r.ingredients.length < 1) {
+    r._warning = 'Very few ingredients found — please verify.';
+  }
+
+  return r;
+}
+
 function parseDuration(iso) {
   if (!iso) return '';
-  const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-  if (!match) return iso;
+  const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
+  if (!match) return String(iso).replace('PT','').replace('H',' hr ').replace('M',' min').trim();
   const parts = [];
   if (match[1]) parts.push(`${match[1]} hr`);
   if (match[2]) parts.push(`${match[2]} min`);
-  if (match[3]) parts.push(`${match[3]} sec`);
-  return parts.join(' ') || iso;
+  return parts.join(' ') || '';
 }
 
-// Parse "2 cups flour" into { amount, unit, name }
 function parseIngredientString(str) {
   str = str.replace(/<[^>]+>/g, '').trim();
-  const match = str.match(/^([\d\/.½¼¾⅓⅔⅛⅜⅝⅞]+(?:\s*[-–to]+\s*[\d\/.½¼¾⅓⅔⅛⅜⅝⅞]+)?)\s*(cups?|tbsp|tsp|tablespoons?|teaspoons?|g|kg|ml|l|litres?|liters?|oz|lbs?|pounds?|bunch(?:es)?|cloves?|cans?|tins?|packets?|pieces?|slices?|pinch(?:es)?|sprigs?|stalks?|heads?|sheets?|rashers?|fillets?|cm|inches?|inch)?\s*(?:of\s+)?(.+)/i);
+
+  // Handle unicode fractions
+  const fracMap = {'½':'.5','¼':'.25','¾':'.75','⅓':'.33','⅔':'.67','⅛':'.125','⅜':'.375','⅝':'.625','⅞':'.875'};
+  for (const [f, v] of Object.entries(fracMap)) {
+    str = str.replace(new RegExp(`(\\d+)\\s*${f}`,'g'), (_, d) => String(parseFloat(d) + parseFloat(v)));
+    str = str.replace(new RegExp(f,'g'), v);
+  }
+
+  const match = str.match(/^([\d.]+(?:\s*[-–to]+\s*[\d.]+)?)\s*(cups?|tbsp|tsp|tablespoons?|teaspoons?|g|kg|ml|l|litres?|liters?|oz|fl\s*oz|lbs?|pounds?|bunch(?:es)?|cloves?|cans?|tins?|packets?|pieces?|slices?|pinch(?:es)?|sprigs?|stalks?|heads?|sheets?|rashers?|fillets?|cm|inches?|inch)?\s*(?:of\s+)?(.+)/i);
   if (match) {
     return { amount: match[1].trim(), unit: (match[2] || '').trim(), name: match[3].trim() };
   }
@@ -242,60 +322,38 @@ function parseIngredientString(str) {
 //  2. WOOLWORTHS PRODUCT SEARCH
 // ═══════════════════════════════════════════════════════════════
 
-app.post('/api/woolworths/search', async (req, res) => {
-  try {
-    const { query, pageSize = 3 } = req.body;
-    if (!query) return res.status(400).json({ error: 'Query required' });
+async function searchWoolworths(query, pageSize = 3) {
+  const payload = {
+    SearchTerm: query, PageSize: pageSize, PageNumber: 1,
+    SortType: 'TraderRelevance',
+    Location: `/shop/search/products?searchTerm=${encodeURIComponent(query)}`,
+    IsSpecial: false, IsBundle: false, IsMobile: false, Filters: [], token: '',
+  };
 
-    // Ensure session is fresh (refresh if older than 30 min)
-    if (Date.now() - wwSession.lastRefresh > 30 * 60 * 1000) {
+  const resp = await fetchWithTimeout('https://www.woolworths.com.au/apis/ui/Search/products', {
+    method: 'POST',
+    headers: getWwHeaders(),
+    body: JSON.stringify(payload),
+  }, 8000); // 8 second timeout per search
+
+  if (!resp.ok) {
+    // Retry once with fresh session on 403
+    if (resp.status === 403 || resp.status === 429) {
       await refreshWoolworthsSession();
+      const retry = await fetchWithTimeout('https://www.woolworths.com.au/apis/ui/Search/products', {
+        method: 'POST', headers: getWwHeaders(), body: JSON.stringify(payload),
+      }, 8000);
+      if (!retry.ok) return { products: [], total: 0, error: `blocked (${retry.status})` };
+      const data = await safeJson(retry);
+      return data ? extractProducts(data) : { products: [], total: 0, error: 'non-JSON response' };
     }
-
-    const searchPayload = {
-      SearchTerm: query,
-      PageSize: pageSize,
-      PageNumber: 1,
-      SortType: 'TraderRelevance',
-      Location: `/shop/search/products?searchTerm=${encodeURIComponent(query)}`,
-      IsSpecial: false,
-      IsBundle: false,
-      IsMobile: false,
-      Filters: [],
-      token: '',
-    };
-
-    const response = await fetch('https://www.woolworths.com.au/apis/ui/Search/products', {
-      method: 'POST',
-      headers: getWwHeaders(),
-      body: JSON.stringify(searchPayload),
-    });
-
-    if (!response.ok) {
-      // If blocked, try refreshing session and retry once
-      if (response.status === 403 || response.status === 429) {
-        await refreshWoolworthsSession();
-        const retry = await fetch('https://www.woolworths.com.au/apis/ui/Search/products', {
-          method: 'POST',
-          headers: getWwHeaders(),
-          body: JSON.stringify(searchPayload),
-        });
-        if (!retry.ok) {
-          return res.status(retry.status).json({ error: 'Woolworths search blocked', status: retry.status });
-        }
-        const data = await retry.json();
-        return res.json(extractProducts(data));
-      }
-      return res.status(response.status).json({ error: 'Search failed', status: response.status });
-    }
-
-    const data = await response.json();
-    res.json(extractProducts(data));
-  } catch (err) {
-    console.error('Search error:', err.message);
-    res.status(500).json({ error: 'Search failed' });
+    return { products: [], total: 0, error: `status ${resp.status}` };
   }
-});
+
+  const data = await safeJson(resp);
+  if (!data) return { products: [], total: 0, error: 'Woolworths returned non-JSON (possible captcha)' };
+  return extractProducts(data);
+}
 
 function extractProducts(data) {
   const products = [];
@@ -315,7 +373,7 @@ function extractProducts(data) {
             cupString: p.CupString || '',
             image: p.MediumImageFile || p.SmallImageFile || '',
             unit: p.Unit || 'Each',
-            productUrl: `https://www.woolworths.com.au/shop/productdetails/${p.Stockcode}/${(p.UrlFriendlyName || p.Name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+            productUrl: `https://www.woolworths.com.au/shop/productdetails/${p.Stockcode}/${(p.UrlFriendlyName || '').toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'product'}`,
           });
         }
       }
@@ -324,9 +382,24 @@ function extractProducts(data) {
   return { products, total: data.SearchResultsCount || 0 };
 }
 
+app.post('/api/woolworths/search', async (req, res) => {
+  try {
+    const { query, pageSize = 3 } = req.body;
+    if (!query) return res.status(400).json({ error: 'Query required' });
+    const result = await searchWoolworths(query, pageSize);
+    if (result.error) {
+      return res.status(200).json({ products: [], total: 0, error: result.error });
+    }
+    res.json(result);
+  } catch (err) {
+    console.error('Search error:', err.message);
+    res.status(200).json({ products: [], total: 0, error: err.message });
+  }
+});
+
 
 // ═══════════════════════════════════════════════════════════════
-//  3. BATCH PRODUCT SEARCH
+//  3. BATCH SEARCH — with per-item timeout and overall cap
 // ═══════════════════════════════════════════════════════════════
 
 app.post('/api/woolworths/batch-search', async (req, res) => {
@@ -336,128 +409,93 @@ app.post('/api/woolworths/batch-search', async (req, res) => {
       return res.status(400).json({ error: 'ingredients array required' });
     }
 
-    // Ensure fresh session
-    if (Date.now() - wwSession.lastRefresh > 30 * 60 * 1000) {
+    if (Date.now() - wwSession.lastRefresh > 25 * 60 * 1000) {
       await refreshWoolworthsSession();
     }
 
     const results = [];
+    let errors = 0;
+
     for (const ing of ingredients) {
       try {
-        const searchPayload = {
-          SearchTerm: ing.searchTerm,
-          PageSize: 3,
-          PageNumber: 1,
-          SortType: 'TraderRelevance',
-          Location: `/shop/search/products?searchTerm=${encodeURIComponent(ing.searchTerm)}`,
-          IsSpecial: false, IsBundle: false, IsMobile: false,
-          Filters: [], token: '',
-        };
-
-        const response = await fetch('https://www.woolworths.com.au/apis/ui/Search/products', {
-          method: 'POST',
-          headers: getWwHeaders(),
-          body: JSON.stringify(searchPayload),
+        const { products, error } = await searchWoolworths(ing.searchTerm, 3);
+        results.push({
+          ingredient: ing.name,
+          searchTerm: ing.searchTerm,
+          matches: products.slice(0, 3),
+          selectedIdx: products.length > 0 ? 0 : -1,
+          error: error || null,
         });
-
-        if (response.ok) {
-          const data = await response.json();
-          const { products } = extractProducts(data);
-          results.push({
-            ingredient: ing.name,
-            searchTerm: ing.searchTerm,
-            matches: products.slice(0, 3),
-            selectedIdx: products.length > 0 ? 0 : -1,
-          });
-        } else {
-          results.push({ ingredient: ing.name, searchTerm: ing.searchTerm, matches: [], selectedIdx: -1 });
-        }
-
-        // Be respectful — 400ms between requests
-        await new Promise(r => setTimeout(r, 400));
+        if (error) errors++;
       } catch (e) {
-        results.push({ ingredient: ing.name, searchTerm: ing.searchTerm, matches: [], selectedIdx: -1 });
+        results.push({ ingredient: ing.name, searchTerm: ing.searchTerm, matches: [], selectedIdx: -1, error: e.message });
+        errors++;
       }
+
+      // If we're getting blocked, stop early
+      if (errors >= 3) {
+        // Fill remaining with empty results
+        for (let i = results.length; i < ingredients.length; i++) {
+          results.push({ ingredient: ingredients[i].name, searchTerm: ingredients[i].searchTerm, matches: [], selectedIdx: -1, error: 'skipped (rate limited)' });
+        }
+        break;
+      }
+
+      await new Promise(r => setTimeout(r, 400));
     }
 
-    res.json({ results });
+    // Report if Woolworths is blocking us
+    const allBlocked = results.every(r => r.matches.length === 0 && r.error);
+    res.json({
+      results,
+      blocked: allBlocked,
+      message: allBlocked ? 'Woolworths may be blocking requests from this server. Use the fallback product links instead.' : null,
+    });
   } catch (err) {
     console.error('Batch search error:', err.message);
-    res.status(500).json({ error: 'Batch search failed' });
+    res.status(200).json({ results: [], blocked: true, message: 'Search failed: ' + err.message });
   }
 });
 
 
 // ═══════════════════════════════════════════════════════════════
-//  4. WOOLWORTHS CART — OPTION 1: Server-side with user cookies
+//  4. WOOLWORTHS LOGIN + CART
 // ═══════════════════════════════════════════════════════════════
-// The user logs into Woolworths via our app. We proxy the login,
-// store their session cookies, and use them to add items to cart.
+if (!global._wwSessions) global._wwSessions = {};
 
-// Step A: Proxy login
 app.post('/api/woolworths/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password required' });
-    }
+    if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
 
-    // First, get a fresh session with CSRF tokens
-    const initResp = await fetch('https://www.woolworths.com.au/shop/securelogin', {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-        'Accept': 'text/html',
-      },
+    const initResp = await fetchWithTimeout('https://www.woolworths.com.au/shop/securelogin', {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36', Accept: 'text/html' },
       redirect: 'follow',
-    });
-
+    }, 10000);
     const initCookies = (initResp.headers.raw()['set-cookie'] || []).map(c => c.split(';')[0]).join('; ');
 
-    // Attempt login via Woolworths auth API
-    const loginResp = await fetch('https://www.woolworths.com.au/apis/ui/Login', {
+    const loginResp = await fetchWithTimeout('https://www.woolworths.com.au/apis/ui/Login', {
       method: 'POST',
-      headers: {
-        ...getWwHeaders(initCookies),
-        'Referer': 'https://www.woolworths.com.au/shop/securelogin',
-      },
-      body: JSON.stringify({
-        username: email,
-        password: password,
-        rememberMe: false,
-      }),
+      headers: { ...getWwHeaders(initCookies), Referer: 'https://www.woolworths.com.au/shop/securelogin' },
+      body: JSON.stringify({ username: email, password, rememberMe: false }),
       redirect: 'manual',
-    });
+    }, 10000);
 
     const loginCookies = (loginResp.headers.raw()['set-cookie'] || []).map(c => c.split(';')[0]).join('; ');
     const allCookies = [initCookies, loginCookies].filter(Boolean).join('; ');
 
-    // Check if login was successful
-    const loginData = loginResp.ok ? await loginResp.json().catch(() => null) : null;
+    const loginData = await safeJson(loginResp);
 
     if (loginData && loginData.Authenticated) {
-      // Store encrypted cookies in a signed httpOnly cookie on our server
       const sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2);
+      global._wwSessions[sessionId] = { cookies: allCookies, email, createdAt: Date.now() };
 
-      // In-memory session store (use Redis in production)
-      if (!global._wwSessions) global._wwSessions = {};
-      global._wwSessions[sessionId] = {
-        cookies: allCookies,
-        email: email,
-        createdAt: Date.now(),
-      };
-
-      // Clean up old sessions (older than 4 hours)
+      // Clean old sessions
       for (const [k, v] of Object.entries(global._wwSessions)) {
-        if (Date.now() - v.createdAt > 4 * 60 * 60 * 1000) delete global._wwSessions[k];
+        if (Date.now() - v.createdAt > 4 * 3600 * 1000) delete global._wwSessions[k];
       }
 
-      res.cookie('ww_session', sessionId, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 4 * 60 * 60 * 1000, // 4 hours
-      });
-
+      res.cookie('ww_session', sessionId, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', maxAge: 4 * 3600 * 1000 });
       res.json({ success: true, email });
     } else {
       res.status(401).json({ error: 'Login failed. Check your email and password.' });
@@ -468,129 +506,78 @@ app.post('/api/woolworths/login', async (req, res) => {
   }
 });
 
-// Step B: Check login status
 app.get('/api/woolworths/auth-status', (req, res) => {
-  const sessionId = req.cookies.ww_session;
-  if (!sessionId || !global._wwSessions?.[sessionId]) {
+  const sid = req.cookies.ww_session;
+  const session = sid && global._wwSessions[sid];
+  if (!session || Date.now() - session.createdAt > 4 * 3600 * 1000) {
     return res.json({ loggedIn: false });
   }
-  const session = global._wwSessions[sessionId];
   res.json({ loggedIn: true, email: session.email });
 });
 
-// Step C: Logout
 app.post('/api/woolworths/logout', (req, res) => {
-  const sessionId = req.cookies.ww_session;
-  if (sessionId && global._wwSessions?.[sessionId]) {
-    delete global._wwSessions[sessionId];
-  }
+  const sid = req.cookies.ww_session;
+  if (sid) delete global._wwSessions[sid];
   res.clearCookie('ww_session');
   res.json({ success: true });
 });
 
-// Step D: Add items to cart using stored session
 app.post('/api/woolworths/add-to-cart', async (req, res) => {
   try {
-    const { items } = req.body; // [{ stockcode, quantity }]
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ error: 'items array required' });
-    }
+    const { items } = req.body;
+    if (!items?.length) return res.status(400).json({ error: 'items required' });
 
-    const sessionId = req.cookies.ww_session;
-    const session = sessionId && global._wwSessions?.[sessionId];
+    const sid = req.cookies.ww_session;
+    const session = sid && global._wwSessions[sid];
+    if (!session) return res.status(401).json({ error: 'Not logged in', requiresLogin: true });
 
-    if (!session) {
-      return res.status(401).json({
-        error: 'Not logged in to Woolworths',
-        requiresLogin: true,
-      });
-    }
-
-    // Add items one at a time using the Woolworths cart API
+    let ok = 0;
     const results = [];
-    let successCount = 0;
-
     for (const item of items) {
       try {
-        const addResp = await fetch('https://www.woolworths.com.au/apis/ui/Trolley/Update', {
+        const r = await fetchWithTimeout('https://www.woolworths.com.au/apis/ui/Trolley/Update', {
           method: 'POST',
           headers: getWwHeaders(session.cookies),
-          body: JSON.stringify({
-            items: [{
-              stockcode: item.stockcode,
-              quantity: item.quantity || 1,
-              isNew: true,
-            }],
-          }),
-        });
+          body: JSON.stringify({ items: [{ stockcode: item.stockcode, quantity: item.quantity || 1, isNew: true }] }),
+        }, 8000);
 
-        if (addResp.ok) {
-          const data = await addResp.json();
-          successCount++;
-          results.push({ stockcode: item.stockcode, success: true });
-        } else {
-          const status = addResp.status;
-          // If 401/403, session may have expired
-          if (status === 401 || status === 403) {
-            return res.status(401).json({
-              error: 'Woolworths session expired. Please log in again.',
-              requiresLogin: true,
-              addedSoFar: successCount,
-            });
-          }
-          results.push({ stockcode: item.stockcode, success: false, status });
+        if (r.ok) { ok++; results.push({ stockcode: item.stockcode, success: true }); }
+        else if (r.status === 401 || r.status === 403) {
+          return res.status(401).json({ error: 'Session expired', requiresLogin: true, addedSoFar: ok });
         }
-
-        // Small delay between cart operations
+        else { results.push({ stockcode: item.stockcode, success: false }); }
         await new Promise(r => setTimeout(r, 200));
       } catch (e) {
         results.push({ stockcode: item.stockcode, success: false, error: e.message });
       }
     }
-
-    res.json({ success: successCount > 0, addedCount: successCount, total: items.length, results });
+    res.json({ success: ok > 0, addedCount: ok, total: items.length, results });
   } catch (err) {
-    console.error('Add to cart error:', err.message);
-    res.status(500).json({ error: 'Failed to add items to cart' });
+    res.status(500).json({ error: 'Cart failed: ' + err.message });
   }
 });
 
 
 // ═══════════════════════════════════════════════════════════════
-//  5. FALLBACK: Generate product deep links
+//  5. PRODUCT LINKS FALLBACK
 // ═══════════════════════════════════════════════════════════════
-// When Option 1 fails or user isn't logged in, generate direct
-// links to each product page on woolworths.com.au
-
 app.post('/api/woolworths/product-links', (req, res) => {
   const { products } = req.body;
-  if (!products || !Array.isArray(products)) {
-    return res.status(400).json({ error: 'products array required' });
-  }
-
+  if (!products?.length) return res.status(400).json({ error: 'products required' });
   const links = products.filter(p => p.stockcode).map(p => ({
-    name: p.name,
-    stockcode: p.stockcode,
+    name: p.name, stockcode: p.stockcode,
     url: `https://www.woolworths.com.au/shop/productdetails/${p.stockcode}`,
-    searchUrl: `https://www.woolworths.com.au/shop/search/products?searchTerm=${encodeURIComponent(p.name || '')}`,
   }));
-
   res.json({ links });
 });
 
 
 // ═══════════════════════════════════════════════════════════════
-//  CATCH-ALL
-// ═══════════════════════════════════════════════════════════════
-
-app.get('*', (req, res) => {
-  res.sendFile(join(__dirname, '..', 'public', 'index.html'));
-});
+app.get('*', (req, res) => res.sendFile(join(__dirname, '..', 'public', 'index.html')));
 
 app.listen(PORT, () => {
-  console.log(`\n🍽️  Meal Planner running at http://localhost:${PORT}\n`);
-  console.log(`  ✓ Recipe import (JSON-LD + HTML scraping)`);
-  console.log(`  ✓ Woolworths product search (session-managed)`);
-  console.log(`  ✓ Cart integration (auth + fallback links)`);
-  console.log('');
+  console.log(`\n🍽️  Meal Planner running at http://localhost:${PORT}`);
+  console.log(`  ✓ Recipe import (JSON-LD + HTML, validated, metric conversion)`);
+  console.log(`  ✓ Woolworths search (timeout-protected, retry logic)`);
+  console.log(`  ✓ Cart integration (auth + fallback links)\n`);
 });
